@@ -159,3 +159,35 @@ func (f *segmentModel) asSegment() *flaggio.Segment {
 		UpdatedAt:   f.UpdatedAt,
 	}
 }
+
+type evaluationModel struct {
+	ID          primitive.ObjectID `bson:"_id"`
+	FlagID      primitive.ObjectID `bson:"flagId"`
+	FlagKey     string             `bson:"flagKey"`
+	FlagVersion int                `bson:"flagVersion"`
+	UserID      string             `bson:"userId"`
+	Value       interface{}        `bson:"value"`
+	CreatedAt   time.Time          `bson:"createdAt"`
+}
+
+func (f *evaluationModel) asEvaluation() *flaggio.Evaluation {
+	return &flaggio.Evaluation{
+		FlagID:      f.FlagID.Hex(),
+		FlagKey:     f.FlagKey,
+		FlagVersion: f.FlagVersion,
+		Value:       f.Value,
+	}
+}
+
+type userModel struct {
+	ID        string                 `bson:"_id"`
+	Context   map[string]interface{} `bson:"context"`
+	UpdatedAt time.Time              `bson:"updatedAt"`
+}
+
+func (f *userModel) asUser() *flaggio.User {
+	return &flaggio.User{
+		ID:      f.ID,
+		Context: f.Context,
+	}
+}

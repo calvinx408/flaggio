@@ -67,11 +67,17 @@ type FlagResults {
     total: Int!
 }
 
+type UserResults {
+    users: [User!]!
+    total: Int!
+}
+
 extend type Query {
     flags(search: String, offset: Int, limit: Int): FlagResults!
     flag(id: ID!): Flag
     segments(offset: Int, limit: Int): [Segment!]!
     segment(id: ID!): Segment
+    users(search: String, offset: Int, limit: Int): UserResults!
 }
 
 extend type Mutation {

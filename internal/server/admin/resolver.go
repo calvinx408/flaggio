@@ -10,6 +10,7 @@ type Resolver struct {
 	VariantRepo repository.Variant
 	RuleRepo    repository.Rule
 	SegmentRepo repository.Segment
+	UserRepo    repository.User
 }
 
 // Mutation returns the mutation resolver.

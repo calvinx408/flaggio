@@ -81,6 +81,16 @@ type UpdateVariant struct {
 	Value       interface{} `json:"value"`
 }
 
+type User struct {
+	ID      string                 `json:"id"`
+	Context map[string]interface{} `json:"context"`
+}
+
+type UserResults struct {
+	Users []*User `json:"users"`
+	Total int     `json:"total"`
+}
+
 type Operation string
 
 const (

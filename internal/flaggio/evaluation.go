@@ -11,10 +11,12 @@ import (
 // Optionally, a stack trace of the evaluation process can be attached
 // to the object.
 type Evaluation struct {
-	FlagKey    string        `json:"flagKey"`
-	Value      interface{}   `json:"value,omitempty"`
-	Error      string        `json:"error,omitempty"`
-	StackTrace []*StackTrace `json:"stackTrace,omitempty"`
+	FlagID      string        `json:"-"`
+	FlagVersion int           `json:"-"`
+	FlagKey     string        `json:"flagKey"`
+	Value       interface{}   `json:"value,omitempty"`
+	Error       string        `json:"error,omitempty"`
+	StackTrace  []*StackTrace `json:"stackTrace,omitempty"`
 }
 
 // StackTrace contains detailed information about the evaluation process.

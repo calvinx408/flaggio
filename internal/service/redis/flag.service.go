@@ -22,7 +22,7 @@ type flagService struct {
 }
 
 // Evaluate returns the result of an evaluation of a single flag.
-func (s flagService) Evaluate(ctx context.Context, flagKey string, req *service.EvaluationRequest) (*service.EvaluationResponse, error) {
+func (s *flagService) Evaluate(ctx context.Context, flagKey string, req *service.EvaluationRequest) (*service.EvaluationResponse, error) {
 	span, ctx := opentracing.StartSpanFromContext(ctx, "RedisFlagService.Evaluate")
 	defer span.Finish()
 
@@ -73,7 +73,7 @@ func (s flagService) Evaluate(ctx context.Context, flagKey string, req *service.
 }
 
 // EvaluateAll returns the results of the evaluation of all flags.
-func (s flagService) EvaluateAll(ctx context.Context, req *service.EvaluationRequest) (*service.EvaluationsResponse, error) {
+func (s *flagService) EvaluateAll(ctx context.Context, req *service.EvaluationRequest) (*service.EvaluationsResponse, error) {
 	span, ctx := opentracing.StartSpanFromContext(ctx, "RedisFlagService.EvaluateAll")
 	defer span.Finish()
 

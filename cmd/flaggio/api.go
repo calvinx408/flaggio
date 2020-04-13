@@ -15,6 +15,7 @@ import (
 	redis_repo "github.com/victorkt/flaggio/internal/repository/redis"
 	"github.com/victorkt/flaggio/internal/server/api"
 	"github.com/victorkt/flaggio/internal/service"
+	mongo_svc "github.com/victorkt/flaggio/internal/service/mongo"
 	redis_svc "github.com/victorkt/flaggio/internal/service/redis"
 )
 
@@ -45,13 +46,23 @@ func startAPI(ctx context.Context, wg *sync.WaitGroup, logger *logrus.Entry) err
 	if err != nil {
 		return err
 	}
+	evalRepo, err := mongo_repo.NewEvaluationRepository(ctx, db)
+	if err != nil {
+		return err
+	}
+	userRepo, err := mongo_repo.NewUserRepository(ctx, db)
+	if err != nil {
+		return err
+	}
 	if redisClient != nil {
 		flagRepo = redis_repo.NewFlagRepository(redisClient, flagRepo)
 		segmentRepo = redis_repo.NewSegmentRepository(redisClient, segmentRepo)
 	}
 
 	// setup services
-	flagService := service.NewFlagService(flagRepo, segmentRepo)
+	flagService := mongo_svc.NewFlagService(evalRepo, userRepo,
+		service.NewFlagService(flagRepo, segmentRepo, evalRepo),
+	)
 	if redisClient != nil {
 		flagService = redis_svc.NewFlagService(redisClient, flagService)
 	}
@@ -66,6 +77,7 @@ func startAPI(ctx context.Context, wg *sync.WaitGroup, logger *logrus.Entry) err
 			Logger:  logger,
 			NoColor: cfg.logFormatter != logFormatterText,
 		}),
+		middleware.Logger,
 		tracingMiddleware("flaggio-api", logger),
 		cors.New(cors.Options{
 			AllowedOrigins:   cfg.corsAllowedOrigins.Value(),
@@ -81,6 +93,7 @@ func startAPI(ctx context.Context, wg *sync.WaitGroup, logger *logrus.Entry) err
 	apiSrv := api.NewServer(
 		router,
 		flagService,
+		logger,
 	)
 
 	logger.WithFields(logrus.Fields{

@@ -47,3 +47,16 @@ func (r *queryResolver) Segments(ctx context.Context, offset, limit *int) ([]*fl
 func (r *queryResolver) Segment(ctx context.Context, id string) (*flaggio.Segment, error) {
 	return r.SegmentRepo.FindByID(ctx, id)
 }
+
+func (r *queryResolver) Users(ctx context.Context, search *string, offset, limit *int) (*flaggio.UserResults, error) {
+	var ofst, lmt *int64
+	if offset != nil {
+		v := int64(*offset)
+		ofst = &v
+	}
+	if limit != nil {
+		v := int64(*limit)
+		lmt = &v
+	}
+	return r.UserRepo.FindAll(ctx, search, ofst, lmt)
+}
