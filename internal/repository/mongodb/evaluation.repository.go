@@ -103,9 +103,10 @@ func (r *EvaluationRepository) Replace(ctx context.Context, userID string, evals
 			FlagID:      flgID,
 			FlagKey:     eval.FlagKey,
 			FlagVersion: eval.FlagVersion,
+			RequestHash: eval.RequestHash,
 			UserID:      userID,
 			Value:       eval.Value,
-			CreatedAt:   time.Now(),
+			UpdatedAt:   time.Now(),
 		}
 	}
 	_, err = r.col.InsertMany(ctx, evalsToInsert)
@@ -128,7 +129,7 @@ func NewEvaluationRepository(ctx context.Context, db *mongo.Database) (repositor
 	_, err := col.Indexes().CreateMany(ctx, []mongo.IndexModel{
 		{
 			Keys:    bson.D{{Key: "userId", Value: 1}, {Key: "flagId", Value: 1}},
-			Options: options.Index().SetBackground(false),
+			Options: options.Index().SetUnique(true).SetBackground(false),
 		},
 	})
 	if err != nil {

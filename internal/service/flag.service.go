@@ -63,10 +63,12 @@ func (s *flagService) Evaluate(ctx context.Context, flagKey string, req *Evaluat
 			return nil, err
 		}
 
+		hash, _ := req.Hash()
 		eval = &flaggio.Evaluation{
 			FlagID:      flg.ID,
 			FlagVersion: flg.Version,
 			FlagKey:     flg.Key,
+			RequestHash: hash,
 			Value:       res.Answer,
 		}
 		if req.IsDebug() {
@@ -92,7 +94,7 @@ func (s *flagService) EvaluateAll(ctx context.Context, req *EvaluationRequest) (
 	defer span.Finish()
 
 	// fetch previous evaluations
-	evals, err := s.evalsRepo.FindAllByUserID(ctx, req.UserID)
+	prevEvals, err := s.evalsRepo.FindAllByUserID(ctx, req.UserID)
 	if err != nil {
 		return nil, err
 	}
@@ -102,35 +104,42 @@ func (s *flagService) EvaluateAll(ctx context.Context, req *EvaluationRequest) (
 		return nil, err
 	}
 
-	// check for missing flag evaluations
-	missingFlagEvals := missingFlagEvals(flgs.Flags, evals)
-	if len(missingFlagEvals) > 0 {
-		// fetch segments
-		sgmts, err := segmentsAsIdentifiers(s.segmentsRepo.FindAll(ctx, nil, nil))
-		if err != nil {
-			return nil, err
-		}
-
-		evalSpan, _ := opentracing.StartSpanFromContext(ctx, "flaggio.Evaluate")
-		for _, flg := range missingFlagEvals {
-			flg.Populate(sgmts)
-
-			evltn := &flaggio.Evaluation{
-				FlagID:      flg.ID,
-				FlagVersion: flg.Version,
-				FlagKey:     flg.Key,
-			}
-			res, err := flaggio.Evaluate(req.UserContext, flg)
-			if err != nil {
-				evltn.Error = err.Error()
-			} else {
-				evltn.Value = res.Answer
-			}
-
-			evals = append(evals, evltn)
-		}
-		evalSpan.Finish()
+	// fetch segments
+	sgmts, err := segmentsAsIdentifiers(s.segmentsRepo.FindAll(ctx, nil, nil))
+	if err != nil {
+		return nil, err
 	}
+
+	// check for missing flag evaluations
+	hash, _ := req.Hash()
+	validEvals := validFlagEvals(hash, flgs.Flags, prevEvals)
+	evals := make([]*flaggio.Evaluation, len(flgs.Flags))
+
+	// evaluate flags
+	evalSpan, _ := opentracing.StartSpanFromContext(ctx, "flaggio.Evaluate")
+	for idx, flg := range flgs.Flags {
+		if evltn, ok := validEvals[flg.ID]; ok {
+			evals[idx] = evltn
+			continue
+		}
+		flg.Populate(sgmts)
+
+		evltn := &flaggio.Evaluation{
+			FlagID:      flg.ID,
+			FlagVersion: flg.Version,
+			FlagKey:     flg.Key,
+			RequestHash: hash,
+		}
+		res, err := flaggio.Evaluate(req.UserContext, flg)
+		if err != nil {
+			evltn.Error = err.Error()
+		} else {
+			evltn.Value = res.Answer
+		}
+
+		evals[idx] = evltn
+	}
+	evalSpan.Finish()
 
 	// build the response
 	evalRes := &EvaluationsResponse{
@@ -155,16 +164,18 @@ func segmentsAsIdentifiers(sgmts []*flaggio.Segment, err error) ([]flaggio.Ident
 	return iders, nil
 }
 
-func missingFlagEvals(flgs []*flaggio.Flag, evals flaggio.EvaluationList) []*flaggio.Flag {
-	evalMap := map[string]struct{}{}
+func validFlagEvals(reqHash string, flgs []*flaggio.Flag, evals flaggio.EvaluationList) map[string]*flaggio.Evaluation {
+	validEvals := map[string]*flaggio.Evaluation{}
 	for _, eval := range evals {
-		evalMap[eval.FlagID] = struct{}{}
+		validEvals[eval.FlagID] = eval
 	}
-	var missing []*flaggio.Flag
 	for _, flg := range flgs {
-		if _, ok := evalMap[flg.ID]; !ok {
-			missing = append(missing, flg)
+		eval, ok := validEvals[flg.ID]
+		// eval is missing if no evaluation found, the evaluation was
+		// for a previous flag version or the user context changed
+		if !ok || flg.Version != eval.FlagVersion || reqHash != eval.RequestHash {
+			delete(validEvals, flg.ID)
 		}
 	}
-	return missing
+	return validEvals
 }

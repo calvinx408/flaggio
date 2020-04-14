@@ -14,6 +14,7 @@ type Evaluation struct {
 	FlagID      string        `json:"-"`
 	FlagVersion int           `json:"-"`
 	FlagKey     string        `json:"flagKey"`
+	RequestHash string        `json:"-"`
 	Value       interface{}   `json:"value,omitempty"`
 	Error       string        `json:"error,omitempty"`
 	StackTrace  []*StackTrace `json:"stackTrace,omitempty"`

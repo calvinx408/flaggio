@@ -103,15 +103,6 @@ func sanitizeUserContextPrefixKey(userCtx flaggio.UserContext, old, new string) 
 // It also creates all needed indexes, if they don't yet exist.
 func NewUserRepository(ctx context.Context, db *mongo.Database) (repository.User, error) {
 	col := db.Collection("users")
-	_, err := col.Indexes().CreateMany(ctx, []mongo.IndexModel{
-		{
-			Keys:    bson.D{{Key: "userId", Value: 1}, {Key: "flagId", Value: 1}},
-			Options: options.Index().SetBackground(false),
-		},
-	})
-	if err != nil {
-		return nil, err
-	}
 	return &UserRepository{
 		db:  db,
 		col: col,
