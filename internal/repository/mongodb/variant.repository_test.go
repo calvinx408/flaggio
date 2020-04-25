@@ -27,39 +27,80 @@ func TestVariantRepository(t *testing.T) {
 	flgID, err := flgRepo.Create(ctx, flaggio.NewFlag{Key: "test"})
 	assert.NoError(t, err, "failed to create flag")
 
-	// create the first variant
-	vrnt1ID, err := repo.Create(ctx, flgID, flaggio.NewVariant{Value: 2.1})
-	assert.NoError(t, err, "failed to create first variant")
+	var vrnt1ID, vrnt2ID string
 
-	// checks the variant was created
-	vrnt, err := repo.FindByID(ctx, flgID, vrnt1ID)
-	assert.NoError(t, err, "failed to find first variant")
-	assert.Equal(t, &flaggio.Variant{ID: vrnt1ID, Value: 2.1}, vrnt)
+	tests := []struct {
+		name string
+		run  func(t *testing.T)
+	}{
+		{
+			name: "create the first variant",
+			run: func(t *testing.T) {
+				vrnt1ID, err = repo.Create(ctx, flgID, flaggio.NewVariant{Value: 2.1})
+				assert.NoError(t, err, "failed to create first variant")
+			},
+		},
+		{
+			name: "checks the variant was created",
+			run: func(t *testing.T) {
+				vrnt, err := repo.FindByID(ctx, flgID, vrnt1ID)
+				assert.NoError(t, err, "failed to find first variant")
+				assert.Equal(t, &flaggio.Variant{ID: vrnt1ID, Value: 2.1}, vrnt)
+			},
+		},
+		{
+			name: "create the second variant",
+			run: func(t *testing.T) {
+				vrnt2ID, err = repo.Create(ctx, flgID, flaggio.NewVariant{Value: "a"})
+				assert.NoError(t, err, "failed to create second variant")
+			},
+		},
+		{
+			name: "find the created variant",
+			run: func(t *testing.T) {
+				vrnt, err := repo.FindByID(ctx, flgID, vrnt2ID)
+				assert.NoError(t, err, "failed to find second variant")
+				assert.Equal(t, &flaggio.Variant{ID: vrnt2ID, Value: "a"}, vrnt)
+			},
+		},
+		{
+			name: "update the second variant",
+			run: func(t *testing.T) {
+				err := repo.Update(ctx, flgID, vrnt2ID, flaggio.UpdateVariant{Value: false})
+				assert.NoError(t, err, "failed to update second variant")
+			},
+		},
+		{
+			name: "find second variant",
+			run: func(t *testing.T) {
+				vrnt, err := repo.FindByID(ctx, flgID, vrnt2ID)
+				assert.NoError(t, err, "failed to find second variant again")
+				assert.Equal(t, &flaggio.Variant{ID: vrnt2ID, Value: false}, vrnt)
+			},
+		},
+		{
+			name: "delete the first variant",
+			run: func(t *testing.T) {
+				err := repo.Delete(ctx, flgID, vrnt1ID)
+				assert.NoError(t, err, "failed to delete first variant")
 
-	// create the second variant
-	vrnt2ID, err := repo.Create(ctx, flgID, flaggio.NewVariant{Value: "a"})
-	assert.NoError(t, err, "failed to create second variant")
+			},
+		},
+		{
+			name: "find deleted variant",
+			run: func(t *testing.T) {
+				vrnt, err := repo.FindByID(ctx, flgID, vrnt1ID)
+				assert.EqualError(t, err, "variant: not found")
+				assert.Nil(t, vrnt)
+			},
+		},
+	}
 
-	// find the created variant
-	vrnt, err = repo.FindByID(ctx, flgID, vrnt2ID)
-	assert.NoError(t, err, "failed to find second variant")
-	assert.Equal(t, &flaggio.Variant{ID: vrnt2ID, Value: "a"}, vrnt)
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
 
-	// update the second variant
-	err = repo.Update(ctx, flgID, vrnt2ID, flaggio.UpdateVariant{Value: false})
-	assert.NoError(t, err, "failed to update second variant")
+		})
+	}
 
-	// find second variant
-	vrnt, err = repo.FindByID(ctx, flgID, vrnt2ID)
-	assert.NoError(t, err, "failed to find second variant again")
-	assert.Equal(t, &flaggio.Variant{ID: vrnt2ID, Value: false}, vrnt)
-
-	// delete the first variant
-	err = repo.Delete(ctx, flgID, vrnt1ID)
-	assert.NoError(t, err, "failed to delete first variant")
-
-	// find first variant
-	vrnt, err = repo.FindByID(ctx, flgID, vrnt1ID)
-	assert.EqualError(t, err, "variant: not found")
-	assert.Nil(t, vrnt)
 }
