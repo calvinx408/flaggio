@@ -48,6 +48,20 @@ func (mr *MockEvaluationMockRecorder) DeleteAllByUserID(arg0, arg1 interface{}) 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteAllByUserID", reflect.TypeOf((*MockEvaluation)(nil).DeleteAllByUserID), arg0, arg1)
 }
 
+// DeleteByID mocks base method
+func (m *MockEvaluation) DeleteByID(arg0 context.Context, arg1 string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteByID", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteByID indicates an expected call of DeleteByID
+func (mr *MockEvaluationMockRecorder) DeleteByID(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteByID", reflect.TypeOf((*MockEvaluation)(nil).DeleteByID), arg0, arg1)
+}
+
 // FindAllByUserID mocks base method
 func (m *MockEvaluation) FindAllByUserID(arg0 context.Context, arg1 string, arg2 *string, arg3, arg4 *int64) (*flaggio.EvaluationResults, error) {
 	m.ctrl.T.Helper()
