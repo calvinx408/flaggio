@@ -49,18 +49,18 @@ func (mr *MockEvaluationMockRecorder) DeleteAllByUserID(arg0, arg1 interface{}) 
 }
 
 // FindAllByUserID mocks base method
-func (m *MockEvaluation) FindAllByUserID(arg0 context.Context, arg1 string) (flaggio.EvaluationList, error) {
+func (m *MockEvaluation) FindAllByUserID(arg0 context.Context, arg1 string, arg2 *string, arg3, arg4 *int64) (*flaggio.EvaluationResults, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "FindAllByUserID", arg0, arg1)
-	ret0, _ := ret[0].(flaggio.EvaluationList)
+	ret := m.ctrl.Call(m, "FindAllByUserID", arg0, arg1, arg2, arg3, arg4)
+	ret0, _ := ret[0].(*flaggio.EvaluationResults)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // FindAllByUserID indicates an expected call of FindAllByUserID
-func (mr *MockEvaluationMockRecorder) FindAllByUserID(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockEvaluationMockRecorder) FindAllByUserID(arg0, arg1, arg2, arg3, arg4 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindAllByUserID", reflect.TypeOf((*MockEvaluation)(nil).FindAllByUserID), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindAllByUserID", reflect.TypeOf((*MockEvaluation)(nil).FindAllByUserID), arg0, arg1, arg2, arg3, arg4)
 }
 
 // FindByUserIDAndFlagID mocks base method

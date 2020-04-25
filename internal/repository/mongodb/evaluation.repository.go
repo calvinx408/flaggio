@@ -142,6 +142,20 @@ func (r *EvaluationRepository) DeleteAllByUserID(ctx context.Context, userID str
 	return err
 }
 
+// DeleteByID deletes an evaluation by its ID.
+func (r *EvaluationRepository) DeleteByID(ctx context.Context, idHex string) error {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "MongoEvaluationRepository.DeleteByID")
+	defer span.Finish()
+
+	id, err := primitive.ObjectIDFromHex(idHex)
+	if err != nil {
+		return err
+	}
+
+	_, err = r.col.DeleteOne(ctx, bson.M{"_id": id})
+	return err
+}
+
 // NewEvaluationRepository returns a new evaluation repository that uses mongodb as underlying storage.
 // It also creates all needed indexes, if they don't yet exist.
 func NewEvaluationRepository(ctx context.Context, db *mongo.Database) (repository.Evaluation, error) {

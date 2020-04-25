@@ -18,4 +18,6 @@ type Evaluation interface {
 	Replace(ctx context.Context, userID string, evals flaggio.EvaluationList) error
 	// DeleteAllByUserID deletes evaluations for a user.
 	DeleteAllByUserID(ctx context.Context, userID string) error
+	// DeleteByID deletes an evaluation by its ID.
+	DeleteByID(ctx context.Context, id string) error
 }

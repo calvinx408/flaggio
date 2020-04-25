@@ -104,10 +104,12 @@ type ComplexityRoot struct {
 		CreateSegment     func(childComplexity int, input flaggio.NewSegment) int
 		CreateSegmentRule func(childComplexity int, segmentID string, input flaggio.NewSegmentRule) int
 		CreateVariant     func(childComplexity int, flagID string, input flaggio.NewVariant) int
+		DeleteEvaluation  func(childComplexity int, id string) int
 		DeleteFlag        func(childComplexity int, id string) int
 		DeleteFlagRule    func(childComplexity int, flagID string, id string) int
 		DeleteSegment     func(childComplexity int, id string) int
 		DeleteSegmentRule func(childComplexity int, segmentID string, id string) int
+		DeleteUser        func(childComplexity int, id string) int
 		DeleteVariant     func(childComplexity int, flagID string, id string) int
 		Ping              func(childComplexity int) int
 		UpdateFlag        func(childComplexity int, id string, input flaggio.UpdateFlag) int
@@ -176,6 +178,8 @@ type MutationResolver interface {
 	CreateSegment(ctx context.Context, input flaggio.NewSegment) (*flaggio.Segment, error)
 	UpdateSegment(ctx context.Context, id string, input flaggio.UpdateSegment) (*flaggio.Segment, error)
 	DeleteSegment(ctx context.Context, id string) (string, error)
+	DeleteUser(ctx context.Context, id string) (string, error)
+	DeleteEvaluation(ctx context.Context, id string) (string, error)
 }
 type QueryResolver interface {
 	Ping(ctx context.Context) (bool, error)
@@ -482,6 +486,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.CreateVariant(childComplexity, args["flagId"].(string), args["input"].(flaggio.NewVariant)), true
 
+	case "Mutation.deleteEvaluation":
+		if e.complexity.Mutation.DeleteEvaluation == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_deleteEvaluation_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.DeleteEvaluation(childComplexity, args["id"].(string)), true
+
 	case "Mutation.deleteFlag":
 		if e.complexity.Mutation.DeleteFlag == nil {
 			break
@@ -529,6 +545,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.DeleteSegmentRule(childComplexity, args["segmentId"].(string), args["id"].(string)), true
+
+	case "Mutation.deleteUser":
+		if e.complexity.Mutation.DeleteUser == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_deleteUser_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.DeleteUser(childComplexity, args["id"].(string)), true
 
 	case "Mutation.deleteVariant":
 		if e.complexity.Mutation.DeleteVariant == nil {
@@ -1084,6 +1112,10 @@ extend type Mutation {
     createSegment(input: NewSegment!): Segment!
     updateSegment(id: ID!, input: UpdateSegment!): Segment!
     deleteSegment(id: ID!): ID!
+
+    deleteUser(id: ID!): ID!
+
+    deleteEvaluation(id: ID!): ID!
 }`, BuiltIn: false},
 }
 var parsedSchema = gqlparser.MustLoadSchema(sources...)
@@ -1186,6 +1218,20 @@ func (ec *executionContext) field_Mutation_createVariant_args(ctx context.Contex
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_deleteEvaluation_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["id"]; ok {
+		arg0, err = ec.unmarshalNID2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_deleteFlagRule_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
@@ -1245,6 +1291,20 @@ func (ec *executionContext) field_Mutation_deleteSegmentRule_args(ctx context.Co
 }
 
 func (ec *executionContext) field_Mutation_deleteSegment_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["id"]; ok {
+		arg0, err = ec.unmarshalNID2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_deleteUser_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
 	var arg0 string
@@ -3284,6 +3344,88 @@ func (ec *executionContext) _Mutation_deleteSegment(ctx context.Context, field g
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
 		return ec.resolvers.Mutation().DeleteSegment(rctx, args["id"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNID2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_deleteUser(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Mutation",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_deleteUser_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().DeleteUser(rctx, args["id"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNID2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_deleteEvaluation(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Mutation",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_deleteEvaluation_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().DeleteEvaluation(rctx, args["id"].(string))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -5957,6 +6099,16 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			}
 		case "deleteSegment":
 			out.Values[i] = ec._Mutation_deleteSegment(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "deleteUser":
+			out.Values[i] = ec._Mutation_deleteUser(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "deleteEvaluation":
+			out.Values[i] = ec._Mutation_deleteEvaluation(ctx, field)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}

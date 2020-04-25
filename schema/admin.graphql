@@ -105,4 +105,8 @@ extend type Mutation {
     createSegment(input: NewSegment!): Segment!
     updateSegment(id: ID!, input: UpdateSegment!): Segment!
     deleteSegment(id: ID!): ID!
+
+    deleteUser(id: ID!): ID!
+
+    deleteEvaluation(id: ID!): ID!
 }
