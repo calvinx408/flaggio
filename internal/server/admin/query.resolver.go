@@ -10,7 +10,7 @@ var _ QueryResolver = &queryResolver{}
 
 type queryResolver struct{ *Resolver }
 
-func (r *queryResolver) Ping(ctx context.Context) (bool, error) {
+func (r *queryResolver) Ping(_ context.Context) (bool, error) {
 	return true, nil
 }
 
@@ -59,4 +59,8 @@ func (r *queryResolver) Users(ctx context.Context, search *string, offset, limit
 		lmt = &v
 	}
 	return r.UserRepo.FindAll(ctx, search, ofst, lmt)
+}
+
+func (r *queryResolver) User(ctx context.Context, id string) (*flaggio.User, error) {
+	return r.UserRepo.FindByID(ctx, id)
 }

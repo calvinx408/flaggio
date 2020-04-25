@@ -1,6 +1,8 @@
 scalar Time
 scalar Any
 scalar Map
+directive @goField(forceResolver: Boolean, name: String) on INPUT_FIELD_DEFINITION
+    | FIELD_DEFINITION
 
 type Flag {
     id: ID!
@@ -63,6 +65,16 @@ type Segment {
 type User {
     id: ID!
     context: Map!
+    evaluations(search: String, offset: Int, limit: Int): EvaluationResults! @goField(forceResolver: true)
+}
+
+type Evaluation {
+    id: ID!
+    flagId: ID!
+    flagKey: String!
+    flagVersion: Int!
+    value: Any
+    updatedAt: Time!
 }
 
 enum Operation {

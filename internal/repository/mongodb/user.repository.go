@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/opentracing/opentracing-go"
+	"github.com/victorkt/flaggio/internal/errors"
 	"github.com/victorkt/flaggio/internal/flaggio"
 	"github.com/victorkt/flaggio/internal/repository"
 	"go.mongodb.org/mongo-driver/bson"
@@ -66,6 +67,24 @@ func (r *UserRepository) FindAll(ctx context.Context, search *string, offset, li
 	}, nil
 }
 
+// FindByID returns a user by its id.
+func (r *UserRepository) FindByID(ctx context.Context, id string) (*flaggio.User, error) {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "MongoUserRepository.FindByID")
+	defer span.Finish()
+
+	filter := bson.M{"_id": id}
+
+	var u userModel
+	if err := r.col.FindOne(ctx, filter).Decode(&u); err != nil {
+		if err == mongo.ErrNoDocuments {
+			return nil, errors.NotFound("user")
+		}
+		return nil, err
+	}
+	u.Context = sanitizeUserContextPrefixKey(u.Context, "%", "$")
+	return u.asUser(), nil
+}
+
 // Replace creates or updates a user.
 func (r *UserRepository) Replace(ctx context.Context, userID string, userCtx flaggio.UserContext) error {
 	span, ctx := opentracing.StartSpanFromContext(ctx, "MongoUserRepository.Replace")
@@ -88,6 +107,9 @@ func (r *UserRepository) Delete(ctx context.Context, userID string) error {
 	return err
 }
 
+// sanitizeUserContextPrefixKey replaces all user context keys that starts with `old`
+// and replaces them with `new`. this is used because mongodb doesn't allow fields
+// starting with $ character, so we replace it with another character for storage
 func sanitizeUserContextPrefixKey(userCtx flaggio.UserContext, old, new string) flaggio.UserContext {
 	usrCtx := make(flaggio.UserContext, len(userCtx))
 	for key, value := range userCtx {

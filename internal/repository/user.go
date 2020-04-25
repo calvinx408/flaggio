@@ -12,6 +12,8 @@ import (
 type User interface {
 	// FindAll returns a list of users, based on an optional offset and limit.
 	FindAll(ctx context.Context, search *string, offset, limit *int64) (*flaggio.UserResults, error)
+	// FindByID returns a user by its id.
+	FindByID(ctx context.Context, id string) (*flaggio.User, error)
 	// Replace creates or updates a user.
 	Replace(ctx context.Context, userID string, userCtx flaggio.UserContext) error
 	// Delete deletes a user.

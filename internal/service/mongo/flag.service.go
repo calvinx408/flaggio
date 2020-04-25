@@ -18,6 +18,7 @@ type flagService struct {
 	svc       service.Flag
 }
 
+// Evaluate evaluates a flag by key, returning a value based on the user context
 func (f *flagService) Evaluate(ctx context.Context, flagKey string, req *service.EvaluationRequest) (*service.EvaluationResponse, error) {
 	span, ctx := opentracing.StartSpanFromContext(ctx, "MongoFlagService.Evaluate")
 	defer span.Finish()
@@ -43,6 +44,7 @@ func (f *flagService) Evaluate(ctx context.Context, flagKey string, req *service
 	return res, nil
 }
 
+// EvaluateAll evaluates all flags, returning a value or an error for each flag based on the user context
 func (f *flagService) EvaluateAll(ctx context.Context, req *service.EvaluationRequest) (*service.EvaluationsResponse, error) {
 	span, ctx := opentracing.StartSpanFromContext(ctx, "MongoFlagService.EvaluateAll")
 	defer span.Finish()
@@ -68,6 +70,7 @@ func (f *flagService) EvaluateAll(ctx context.Context, req *service.EvaluationRe
 	return res, nil
 }
 
+// NewFlagService returns a new Flag service
 func NewFlagService(
 	evalsRepo repository.Evaluation,
 	usersRepo repository.User,

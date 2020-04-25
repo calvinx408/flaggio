@@ -12,6 +12,11 @@ type Ruler interface {
 	IsRuler()
 }
 
+type EvaluationResults struct {
+	Evaluations []*Evaluation `json:"evaluations"`
+	Total       int           `json:"total"`
+}
+
 type FlagResults struct {
 	Flags []*Flag `json:"flags"`
 	Total int     `json:"total"`
@@ -82,8 +87,9 @@ type UpdateVariant struct {
 }
 
 type User struct {
-	ID      string                 `json:"id"`
-	Context map[string]interface{} `json:"context"`
+	ID          string                 `json:"id"`
+	Context     map[string]interface{} `json:"context"`
+	Evaluations *EvaluationResults     `json:"evaluations"`
 }
 
 type UserResults struct {

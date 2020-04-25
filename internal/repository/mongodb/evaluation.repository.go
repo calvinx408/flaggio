@@ -2,6 +2,7 @@ package mongodb
 
 import (
 	"context"
+	"regexp"
 	"time"
 
 	"github.com/opentracing/opentracing-go"
@@ -23,11 +24,21 @@ type EvaluationRepository struct {
 }
 
 // FindAllByUserID returns all previous flag evaluations for a given user ID.
-func (r *EvaluationRepository) FindAllByUserID(ctx context.Context, userID string) (flaggio.EvaluationList, error) {
+func (r *EvaluationRepository) FindAllByUserID(ctx context.Context, userID string, search *string, offset, limit *int64) (*flaggio.EvaluationResults, error) {
 	span, ctx := opentracing.StartSpanFromContext(ctx, "MongoEvaluationRepository.FindAllByUserID")
 	defer span.Finish()
 
-	cursor, err := r.col.Find(ctx, bson.M{"userId": userID})
+	filter := bson.M{"userId": userID}
+	if search != nil {
+		filter["flagKey"] = primitive.Regex{Pattern: regexp.QuoteMeta(*search), Options: "i"}
+	}
+
+	cursor, err := r.col.Find(ctx, filter, &options.FindOptions{
+		Skip:      offset,
+		Limit:     limit,
+		Sort:      bson.M{"flagKey": 1},
+		Collation: &options.Collation{Locale: "en"},
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -47,7 +58,16 @@ func (r *EvaluationRepository) FindAllByUserID(ctx context.Context, userID strin
 		return nil, err
 	}
 
-	return evals, nil
+	// get the total results
+	total, err := r.col.CountDocuments(ctx, filter)
+	if err != nil {
+		return nil, err
+	}
+
+	return &flaggio.EvaluationResults{
+		Evaluations: evals,
+		Total:       int(total),
+	}, nil
 }
 
 // FindByUserIDAndFlagKey returns a previous flag evaluation for a given user ID and flag ID.

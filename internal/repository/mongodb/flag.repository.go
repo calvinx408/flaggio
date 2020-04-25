@@ -60,6 +60,7 @@ func (r *FlagRepository) FindAll(ctx context.Context, search *string, offset, li
 		return nil, err
 	}
 
+	// get the total results
 	total, err := r.col.CountDocuments(ctx, filter)
 	if err != nil {
 		return nil, err

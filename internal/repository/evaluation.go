@@ -11,7 +11,7 @@ import (
 // Flag represents a set of operations available to list and manage evaluations.
 type Evaluation interface {
 	// FindAllByUserID returns all previous flag evaluations for a given user ID.
-	FindAllByUserID(ctx context.Context, userID string) (flaggio.EvaluationList, error)
+	FindAllByUserID(ctx context.Context, userID string, search *string, offset, limit *int64) (*flaggio.EvaluationResults, error)
 	// FindByUserIDAndFlagID returns a previous flag evaluation for a given user ID and flag ID.
 	FindByUserIDAndFlagID(ctx context.Context, userID, flagID string) (*flaggio.Evaluation, error)
 	// Replace creates or replaces evaluations for a user.

@@ -94,7 +94,7 @@ func (s *flagService) EvaluateAll(ctx context.Context, req *EvaluationRequest) (
 	defer span.Finish()
 
 	// fetch previous evaluations
-	prevEvals, err := s.evalsRepo.FindAllByUserID(ctx, req.UserID)
+	prevEvals, err := s.evalsRepo.FindAllByUserID(ctx, req.UserID, nil, nil, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -112,7 +112,7 @@ func (s *flagService) EvaluateAll(ctx context.Context, req *EvaluationRequest) (
 
 	// check for missing flag evaluations
 	hash, _ := req.Hash()
-	validEvals := validFlagEvals(hash, flgs.Flags, prevEvals)
+	validEvals := validFlagEvals(hash, flgs.Flags, prevEvals.Evaluations)
 	evals := make([]*flaggio.Evaluation, len(flgs.Flags))
 
 	// evaluate flags

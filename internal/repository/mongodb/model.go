@@ -173,6 +173,8 @@ type evaluationModel struct {
 
 func (f *evaluationModel) asEvaluation() *flaggio.Evaluation {
 	return &flaggio.Evaluation{
+		ID:          f.ID.Hex(),
+		UpdatedAt:   f.UpdatedAt,
 		FlagID:      f.FlagID.Hex(),
 		FlagKey:     f.FlagKey,
 		FlagVersion: f.FlagVersion,

@@ -10,7 +10,7 @@ var _ MutationResolver = &mutationResolver{}
 
 type mutationResolver struct{ *Resolver }
 
-func (r *mutationResolver) Ping(ctx context.Context) (bool, error) {
+func (r *mutationResolver) Ping(_ context.Context) (bool, error) {
 	return true, nil
 }
 
