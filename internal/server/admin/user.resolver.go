@@ -11,7 +11,7 @@ var _ UserResolver = &userResolver{}
 type userResolver struct{ *Resolver }
 
 // Evaluations returns the list of evaluations for a given user.
-func (r *userResolver) Evaluations(ctx context.Context, usr *flaggio.User, search *string, offset *int, limit *int) (*flaggio.EvaluationResults, error) {
+func (r *userResolver) Evaluations(ctx context.Context, usr *flaggio.User, search *string, offset, limit *int) (*flaggio.EvaluationResults, error) {
 	var ofst, lmt *int64
 	if offset != nil {
 		v := int64(*offset)

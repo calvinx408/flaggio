@@ -110,11 +110,11 @@ func (r *UserRepository) Delete(ctx context.Context, userID string) error {
 // sanitizeUserContextPrefixKey replaces all user context keys that starts with `old`
 // and replaces them with `new`. this is used because mongodb doesn't allow fields
 // starting with $ character, so we replace it with another character for storage
-func sanitizeUserContextPrefixKey(userCtx flaggio.UserContext, old, new string) flaggio.UserContext {
+func sanitizeUserContextPrefixKey(userCtx flaggio.UserContext, oldStr, newStr string) flaggio.UserContext {
 	usrCtx := make(flaggio.UserContext, len(userCtx))
 	for key, value := range userCtx {
-		if strings.HasPrefix(key, old) {
-			key = strings.Replace(key, old, new, 1)
+		if strings.HasPrefix(key, oldStr) {
+			key = strings.Replace(key, oldStr, newStr, 1)
 		}
 		usrCtx[key] = value
 	}

@@ -16,7 +16,6 @@ var (
 
 func TestMain(t *testing.M) {
 	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
 	mongoURI := os.Getenv("MONGO_URI")
 	if mongoURI == "" {
 		mongoURI = "mongodb://localhost:27017"
@@ -34,5 +33,6 @@ func TestMain(t *testing.M) {
 	if err := mongoClient.Disconnect(ctx); err != nil {
 		panic(err)
 	}
+	cancel()
 	os.Exit(code)
 }

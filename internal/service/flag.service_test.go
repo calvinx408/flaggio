@@ -70,7 +70,8 @@ func TestFlagService_Evaluate(t *testing.T) {
 			ctx := context.Background()
 			flagRepo := repository_mock.NewMockFlag(mockCtrl)
 			segmentRepo := repository_mock.NewMockSegment(mockCtrl)
-			flagService := service.NewFlagService(flagRepo, segmentRepo)
+			evalRepo := repository_mock.NewMockEvaluation(mockCtrl)
+			flagService := service.NewFlagService(flagRepo, segmentRepo, evalRepo)
 			flagResults := flags[0]
 			segmentesults := make([]*flaggio.Segment, 0)
 
@@ -80,6 +81,9 @@ func TestFlagService_Evaluate(t *testing.T) {
 			segmentRepo.EXPECT().
 				FindAll(gomock.AssignableToTypeOf(ctxInterface), nil, nil).
 				Times(1).Return(segmentesults, nil)
+			evalRepo.EXPECT().
+				FindByUserIDAndFlagID(gomock.AssignableToTypeOf(ctxInterface), tt.evaluationRequest.UserID, "1").
+				Times(1).Return(nil, nil)
 
 			result, err := flagService.Evaluate(ctx, tt.flagKey, tt.evaluationRequest)
 			assert.NoError(t, err)
@@ -143,7 +147,8 @@ func TestFlagService_EvaluateAll(t *testing.T) {
 			ctx := context.Background()
 			flagRepo := repository_mock.NewMockFlag(mockCtrl)
 			segmentRepo := repository_mock.NewMockSegment(mockCtrl)
-			flagService := service.NewFlagService(flagRepo, segmentRepo)
+			evalRepo := repository_mock.NewMockEvaluation(mockCtrl)
+			flagService := service.NewFlagService(flagRepo, segmentRepo, evalRepo)
 			flagResults := &flaggio.FlagResults{Flags: flags, Total: len(flags)}
 			segmentesults := make([]*flaggio.Segment, 0)
 
@@ -153,6 +158,9 @@ func TestFlagService_EvaluateAll(t *testing.T) {
 			segmentRepo.EXPECT().
 				FindAll(gomock.AssignableToTypeOf(ctxInterface), nil, nil).
 				Times(1).Return(segmentesults, nil)
+			evalRepo.EXPECT().
+				FindAllByUserID(gomock.AssignableToTypeOf(ctxInterface), tt.evaluationRequest.UserID, nil, nil, nil).
+				Times(1).Return(&flaggio.EvaluationResults{Evaluations: []*flaggio.Evaluation{}}, nil)
 
 			result, err := flagService.EvaluateAll(ctx, tt.evaluationRequest)
 			assert.NoError(t, err)
