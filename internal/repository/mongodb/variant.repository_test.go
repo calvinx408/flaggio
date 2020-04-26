@@ -83,7 +83,6 @@ func TestVariantRepository(t *testing.T) {
 			run: func(t *testing.T) {
 				err := repo.Delete(ctx, flgID, vrnt1ID)
 				assert.NoError(t, err, "failed to delete first variant")
-
 			},
 		},
 		{
@@ -98,9 +97,7 @@ func TestVariantRepository(t *testing.T) {
 
 	for _, tt := range tests {
 		tt := tt
-		t.Run(tt.name, func(t *testing.T) {
-
-		})
+		t.Run(tt.name, tt.run)
 	}
 
 }
