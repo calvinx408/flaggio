@@ -70,16 +70,44 @@ func (r *EvaluationRepository) FindAllByUserID(ctx context.Context, userID strin
 	}, nil
 }
 
-// FindByUserIDAndFlagKey returns a previous flag evaluation for a given user ID and flag ID.
-func (r *EvaluationRepository) FindByUserIDAndFlagID(ctx context.Context, userID, flagID string) (*flaggio.Evaluation, error) {
-	span, ctx := opentracing.StartSpanFromContext(ctx, "MongoEvaluationRepository.FindByUserIDAndFlagKey")
+// FindAllByReqHash returns all previous flag evaluations for a given request hash.
+func (r *EvaluationRepository) FindAllByReqHash(ctx context.Context, reqHash string) (flaggio.EvaluationList, error) {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "MongoEvaluationRepository.FindAllByReqHash")
 	defer span.Finish()
 
-	flgID, err := primitive.ObjectIDFromHex(flagID)
+	filter := bson.M{"requestHash": reqHash}
+	cursor, err := r.col.Find(ctx, filter, &options.FindOptions{
+		Sort:      bson.M{"flagKey": 1},
+		Collation: &options.Collation{Locale: "en"},
+	})
 	if err != nil {
 		return nil, err
 	}
-	filter := bson.M{"userId": userID, "flagId": flgID}
+
+	var evals flaggio.EvaluationList
+	for cursor.Next(ctx) {
+		var e evaluationModel
+		// decode the document
+		if err := cursor.Decode(&e); err != nil {
+			return nil, err
+		}
+		evals = append(evals, e.asEvaluation())
+	}
+
+	// check if the cursor encountered any errors while iterating
+	if err := cursor.Err(); err != nil {
+		return nil, err
+	}
+
+	return evals, nil
+}
+
+// FindByReqHashAndFlagKey returns a previous flag evaluation for a given request hash and flag key.
+func (r *EvaluationRepository) FindByReqHashAndFlagKey(ctx context.Context, reqHash, flagKey string) (*flaggio.Evaluation, error) {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "MongoEvaluationRepository.FindByReqHashAndFlagKey")
+	defer span.Finish()
+
+	filter := bson.M{"requestHash": reqHash, "flagKey": flagKey}
 
 	var e evaluationModel
 	if err := r.col.FindOne(ctx, filter).Decode(&e); err != nil {
@@ -91,9 +119,38 @@ func (r *EvaluationRepository) FindByUserIDAndFlagID(ctx context.Context, userID
 	return e.asEvaluation(), nil
 }
 
-// Replace creates or replaces evaluations for a user.
-func (r *EvaluationRepository) Replace(ctx context.Context, userID string, evals flaggio.EvaluationList) error {
-	span, ctx := opentracing.StartSpanFromContext(ctx, "MongoEvaluationRepository.Replace")
+// ReplaceOne creates or replaces one evaluation for a combination of user ID, request hash and flag key.
+func (r *EvaluationRepository) ReplaceOne(ctx context.Context, userID string, eval *flaggio.Evaluation) error {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "MongoEvaluationRepository.ReplaceOne")
+	defer span.Finish()
+
+	// delete current evaluation
+	_, err := r.col.DeleteOne(ctx, bson.M{"userId": userID, "flagId": eval.FlagID})
+	if err != nil {
+		return err
+	}
+
+	// prepare list of evaluations to insert
+	flgID, err := primitive.ObjectIDFromHex(eval.FlagID)
+	if err != nil {
+		return err
+	}
+	_, err = r.col.InsertOne(ctx, &evaluationModel{
+		ID:          primitive.NewObjectID(),
+		FlagID:      flgID,
+		FlagKey:     eval.FlagKey,
+		FlagVersion: eval.FlagVersion,
+		RequestHash: eval.RequestHash,
+		UserID:      userID,
+		Value:       eval.Value,
+		UpdatedAt:   time.Now(),
+	})
+	return err
+}
+
+// ReplaceAll creates or replaces evaluations for a combination of user and request hash.
+func (r *EvaluationRepository) ReplaceAll(ctx context.Context, userID, reqHash string, evals flaggio.EvaluationList) error {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "MongoEvaluationRepository.ReplaceAll")
 	defer span.Finish()
 
 	// get list of evaluated flag ids

@@ -52,7 +52,7 @@ func (r *SegmentRepository) FindAll(ctx context.Context, offset, limit *int64) (
 		return nil, err
 	}
 
-	// marshall and save result
+	// marshal and save result
 	if shouldCache {
 		b, err := msgpack.Marshal(res)
 		if err != nil {

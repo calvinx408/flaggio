@@ -12,10 +12,14 @@ import (
 type Evaluation interface {
 	// FindAllByUserID returns all previous flag evaluations for a given user ID.
 	FindAllByUserID(ctx context.Context, userID string, search *string, offset, limit *int64) (*flaggio.EvaluationResults, error)
-	// FindByUserIDAndFlagID returns a previous flag evaluation for a given user ID and flag ID.
-	FindByUserIDAndFlagID(ctx context.Context, userID, flagID string) (*flaggio.Evaluation, error)
-	// Replace creates or replaces evaluations for a user.
-	Replace(ctx context.Context, userID string, evals flaggio.EvaluationList) error
+	// FindAllByReqHash returns all previous flag evaluations for a given request hash.
+	FindAllByReqHash(ctx context.Context, reqHash string) (flaggio.EvaluationList, error)
+	// FindByReqHashAndFlagKey returns a previous flag evaluation for a given request hash and flag key.
+	FindByReqHashAndFlagKey(ctx context.Context, reqHash, flagKey string) (*flaggio.Evaluation, error)
+	// ReplaceOne creates or replaces one evaluation for a combination of user ID, request hash and flag key.
+	ReplaceOne(ctx context.Context, userID string, eval *flaggio.Evaluation) error
+	// ReplaceAll creates or replaces evaluations for a combination of user and request hash.
+	ReplaceAll(ctx context.Context, userID, reqHash string, evals flaggio.EvaluationList) error
 	// DeleteAllByUserID deletes evaluations for a user.
 	DeleteAllByUserID(ctx context.Context, userID string) error
 	// DeleteByID deletes an evaluation by its ID.

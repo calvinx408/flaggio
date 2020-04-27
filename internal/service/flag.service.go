@@ -42,7 +42,11 @@ func (s *flagService) Evaluate(ctx context.Context, flagKey string, req *Evaluat
 		return nil, err
 	}
 	// fetch previous evaluations for this flag
-	eval, err := s.evalsRepo.FindByUserIDAndFlagID(ctx, req.UserID, flg.ID)
+	hash, err := req.Hash()
+	if err != nil {
+		return nil, err
+	}
+	eval, err := s.evalsRepo.FindByReqHashAndFlagKey(ctx, hash, flg.Key)
 	if err != nil && !errors.Is(err, apperrors.ErrNotFound) {
 		return nil, err
 	}
@@ -94,7 +98,11 @@ func (s *flagService) EvaluateAll(ctx context.Context, req *EvaluationRequest) (
 	defer span.Finish()
 
 	// fetch previous evaluations
-	prevEvals, err := s.evalsRepo.FindAllByUserID(ctx, req.UserID, nil, nil, nil)
+	hash, err := req.Hash()
+	if err != nil {
+		return nil, err
+	}
+	prevEvals, err := s.evalsRepo.FindAllByReqHash(ctx, req.UserID)
 	if err != nil {
 		return nil, err
 	}
@@ -111,8 +119,7 @@ func (s *flagService) EvaluateAll(ctx context.Context, req *EvaluationRequest) (
 	}
 
 	// check for missing flag evaluations
-	hash, _ := req.Hash()
-	validEvals := validFlagEvals(hash, flgs.Flags, prevEvals.Evaluations)
+	validEvals := validFlagEvals(hash, flgs.Flags, prevEvals)
 	evals := make([]*flaggio.Evaluation, len(flgs.Flags))
 
 	// evaluate flags

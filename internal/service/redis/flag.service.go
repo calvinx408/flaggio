@@ -2,23 +2,19 @@ package redis
 
 import (
 	"context"
-	"errors"
-	"time"
 
-	"github.com/go-redis/redis/v7"
 	"github.com/opentracing/opentracing-go"
-	"github.com/victorkt/flaggio/internal/flaggio"
+	"github.com/victorkt/flaggio/internal/repository"
 	"github.com/victorkt/flaggio/internal/service"
-	"github.com/vmihailenco/msgpack/v4"
 )
 
 var _ service.Flag = (*flagService)(nil)
 
 // flagService implements service.Flag interface using redis.
 type flagService struct {
-	redis *redis.Client
-	svc   service.Flag
-	ttl   time.Duration
+	evalsRepo repository.Evaluation
+	usersRepo repository.User
+	svc       service.Flag
 }
 
 // Evaluate returns the result of an evaluation of a single flag.
@@ -27,28 +23,20 @@ func (s *flagService) Evaluate(ctx context.Context, flagKey string, req *service
 	defer span.Finish()
 
 	shouldCache := shouldCacheEvaluation(req)
-	var cacheKey string
 
 	if shouldCache {
 		reqHash, err := req.Hash()
 		if err != nil {
 			return nil, err
 		}
-		cacheKey = flaggio.EvalCacheKey(flagKey, reqHash)
-
-		// fetch flag results from cache
-		cached, err := s.redis.WithContext(ctx).Get(cacheKey).Result()
-		if err != nil && !errors.Is(err, redis.Nil) {
-			// an unexpected error occurred, return it
+		eval, err := s.evalsRepo.FindByReqHashAndFlagKey(ctx, reqHash, flagKey)
+		if err != nil {
 			return nil, err
 		}
-		if cached != "" {
-			// cache hit, unmarshall and return result
-			var er service.EvaluationResponse
-			if err := msgpack.Unmarshal([]byte(cached), &er); err == nil {
-				// return if no errors, otherwise defer to the store
-				return &er, nil
-			}
+		if eval != nil {
+			return &service.EvaluationResponse{
+				Evaluation: eval,
+			}, nil
 		}
 	}
 
@@ -59,12 +47,12 @@ func (s *flagService) Evaluate(ctx context.Context, flagKey string, req *service
 	}
 
 	if shouldCache {
-		// marshall and save result
-		b, err := msgpack.Marshal(res)
-		if err != nil {
+		// create or update the user
+		if err := s.usersRepo.Replace(ctx, req.UserID, req.UserContext); err != nil {
 			return nil, err
 		}
-		if err := s.redis.Set(cacheKey, b, s.ttl).Err(); err != nil {
+		// replace the evaluation for the user and flag key
+		if err := s.evalsRepo.ReplaceOne(ctx, req.UserID, res.Evaluation); err != nil {
 			return nil, err
 		}
 	}
@@ -78,28 +66,20 @@ func (s *flagService) EvaluateAll(ctx context.Context, req *service.EvaluationRe
 	defer span.Finish()
 
 	shouldCache := shouldCacheEvaluation(req)
-	var cacheKey string
 
 	if shouldCache {
 		reqHash, err := req.Hash()
 		if err != nil {
 			return nil, err
 		}
-		cacheKey = flaggio.EvalCacheKey(reqHash)
-
-		// fetch flag results from cache
-		cached, err := s.redis.WithContext(ctx).Get(cacheKey).Result()
-		if err != nil && !errors.Is(err, redis.Nil) {
-			// an unexpected error occurred, return it
+		evals, err := s.evalsRepo.FindAllByReqHash(ctx, reqHash)
+		if err != nil {
 			return nil, err
 		}
-		if cached != "" {
-			// cache hit, unmarshall and return result
-			var er service.EvaluationsResponse
-			if err := msgpack.Unmarshal([]byte(cached), &er); err == nil {
-				// return if no errors, otherwise defer to the store
-				return &er, nil
-			}
+		if evals != nil {
+			return &service.EvaluationsResponse{
+				Evaluations: evals,
+			}, nil
 		}
 	}
 
@@ -110,12 +90,16 @@ func (s *flagService) EvaluateAll(ctx context.Context, req *service.EvaluationRe
 	}
 
 	if shouldCache {
-		// marshall and save result
-		b, err := msgpack.Marshal(res)
+		hash, err := req.Hash()
 		if err != nil {
 			return nil, err
 		}
-		if err := s.redis.Set(cacheKey, b, s.ttl).Err(); err != nil {
+		// create or update the user
+		if err := s.usersRepo.Replace(ctx, req.UserID, req.UserContext); err != nil {
+			return nil, err
+		}
+		// replace the evaluations for the user
+		if err := s.evalsRepo.ReplaceAll(ctx, req.UserID, hash, res.Evaluations); err != nil {
 			return nil, err
 		}
 	}
@@ -123,10 +107,14 @@ func (s *flagService) EvaluateAll(ctx context.Context, req *service.EvaluationRe
 	return res, nil
 }
 
-func NewFlagService(redisClient *redis.Client, svc service.Flag) service.Flag {
+func NewFlagService(
+	evalsRepo repository.Evaluation,
+	usersRepo repository.User,
+	svc service.Flag,
+) service.Flag {
 	return &flagService{
-		redis: redisClient,
-		svc:   svc,
-		ttl:   24 * time.Hour,
+		evalsRepo: evalsRepo,
+		usersRepo: usersRepo,
+		svc:       svc,
 	}
 }

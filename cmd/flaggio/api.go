@@ -15,7 +15,6 @@ import (
 	redis_repo "github.com/victorkt/flaggio/internal/repository/redis"
 	"github.com/victorkt/flaggio/internal/server/api"
 	"github.com/victorkt/flaggio/internal/service"
-	mongo_svc "github.com/victorkt/flaggio/internal/service/mongo"
 	redis_svc "github.com/victorkt/flaggio/internal/service/redis"
 )
 
@@ -57,14 +56,13 @@ func startAPI(ctx context.Context, wg *sync.WaitGroup, logger *logrus.Entry) err
 	if redisClient != nil {
 		flagRepo = redis_repo.NewFlagRepository(redisClient, flagRepo)
 		segmentRepo = redis_repo.NewSegmentRepository(redisClient, segmentRepo)
+		evalRepo = redis_repo.NewEvaluationRepository(redisClient, evalRepo)
 	}
 
 	// setup services
-	flagService := mongo_svc.NewFlagService(evalRepo, userRepo,
-		service.NewFlagService(flagRepo, segmentRepo, evalRepo),
-	)
+	flagService := service.NewFlagService(flagRepo, segmentRepo, evalRepo)
 	if redisClient != nil {
-		flagService = redis_svc.NewFlagService(redisClient, flagService)
+		flagService = redis_svc.NewFlagService(evalRepo, userRepo, flagService)
 	}
 
 	// setup router

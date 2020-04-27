@@ -64,6 +64,7 @@ func startAdmin(ctx context.Context, wg *sync.WaitGroup, logger *logrus.Entry) e
 		segmentRepo = redis_repo.NewSegmentRepository(redisClient, segmentRepo)
 		variantRepo = redis_repo.NewVariantRepository(redisClient, variantRepo, flagRepo)
 		ruleRepo = redis_repo.NewRuleRepository(redisClient, ruleRepo, flagRepo, segmentRepo)
+		evalRepo = redis_repo.NewEvaluationRepository(redisClient, evalRepo)
 	}
 
 	// setup graphql resolver
