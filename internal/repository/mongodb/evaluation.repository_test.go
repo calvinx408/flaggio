@@ -58,9 +58,9 @@ func TestEvaluationRepository(t *testing.T) {
 				evals, err := repo.FindAllByUserID(ctx, "TEST1", nil, nil, nil)
 				assert.NoError(t, err, "failed to find first evaluations")
 				evaluations[0].ID = evals.Evaluations[0].ID
-				evaluations[0].UpdatedAt = evals.Evaluations[0].UpdatedAt
+				evaluations[0].CreatedAt = evals.Evaluations[0].CreatedAt
 				evaluations[1].ID = evals.Evaluations[1].ID
-				evaluations[1].UpdatedAt = evals.Evaluations[1].UpdatedAt
+				evaluations[1].CreatedAt = evals.Evaluations[1].CreatedAt
 				assert.Equal(t, &flaggio.EvaluationResults{Evaluations: evaluations, Total: 2}, evals)
 			},
 		},
@@ -111,9 +111,9 @@ func TestEvaluationRepository(t *testing.T) {
 				evals, err := repo.FindAllByUserID(ctx, "TEST1", nil, nil, nil)
 				assert.NoError(t, err, "failed to find updated evaluations")
 				evaluations[0].ID = evals.Evaluations[0].ID
-				evaluations[0].UpdatedAt = evals.Evaluations[0].UpdatedAt
+				evaluations[0].CreatedAt = evals.Evaluations[0].CreatedAt
 				evaluations[1].ID = evals.Evaluations[1].ID
-				evaluations[1].UpdatedAt = evals.Evaluations[1].UpdatedAt
+				evaluations[1].CreatedAt = evals.Evaluations[1].CreatedAt
 				assert.Equal(t, &flaggio.EvaluationResults{Evaluations: evaluations, Total: 2}, evals)
 			},
 		},

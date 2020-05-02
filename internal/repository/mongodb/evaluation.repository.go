@@ -125,16 +125,16 @@ func (r *EvaluationRepository) ReplaceOne(ctx context.Context, userID string, ev
 	defer span.Finish()
 
 	// delete current evaluation
-	_, err := r.col.DeleteOne(ctx, bson.M{"userId": userID, "flagId": eval.FlagID})
+	flgID, err := primitive.ObjectIDFromHex(eval.FlagID)
+	if err != nil {
+		return err
+	}
+	_, err = r.col.DeleteOne(ctx, bson.M{"userId": userID, "flagId": flgID})
 	if err != nil {
 		return err
 	}
 
 	// prepare list of evaluations to insert
-	flgID, err := primitive.ObjectIDFromHex(eval.FlagID)
-	if err != nil {
-		return err
-	}
 	_, err = r.col.InsertOne(ctx, &evaluationModel{
 		ID:          primitive.NewObjectID(),
 		FlagID:      flgID,
@@ -143,7 +143,7 @@ func (r *EvaluationRepository) ReplaceOne(ctx context.Context, userID string, ev
 		RequestHash: eval.RequestHash,
 		UserID:      userID,
 		Value:       eval.Value,
-		UpdatedAt:   time.Now(),
+		CreatedAt:   time.Now(),
 	})
 	return err
 }
@@ -183,7 +183,7 @@ func (r *EvaluationRepository) ReplaceAll(ctx context.Context, userID, reqHash s
 			RequestHash: eval.RequestHash,
 			UserID:      userID,
 			Value:       eval.Value,
-			UpdatedAt:   time.Now(),
+			CreatedAt:   time.Now(),
 		}
 	}
 	_, err = r.col.InsertMany(ctx, evalsToInsert)

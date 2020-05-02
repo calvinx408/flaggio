@@ -15,7 +15,6 @@ import (
 	redis_repo "github.com/victorkt/flaggio/internal/repository/redis"
 	"github.com/victorkt/flaggio/internal/server/api"
 	"github.com/victorkt/flaggio/internal/service"
-	redis_svc "github.com/victorkt/flaggio/internal/service/redis"
 )
 
 func startAPI(ctx context.Context, wg *sync.WaitGroup, logger *logrus.Entry) error {
@@ -60,10 +59,7 @@ func startAPI(ctx context.Context, wg *sync.WaitGroup, logger *logrus.Entry) err
 	}
 
 	// setup services
-	flagService := service.NewFlagService(flagRepo, segmentRepo, evalRepo)
-	if redisClient != nil {
-		flagService = redis_svc.NewFlagService(evalRepo, userRepo, flagService)
-	}
+	flagService := service.NewFlagService(flagRepo, segmentRepo, evalRepo, userRepo)
 
 	// setup router
 	router := chi.NewRouter()

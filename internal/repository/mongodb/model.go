@@ -168,13 +168,13 @@ type evaluationModel struct {
 	RequestHash string             `bson:"requestHash"`
 	UserID      string             `bson:"userId"`
 	Value       interface{}        `bson:"value"`
-	UpdatedAt   time.Time          `bson:"updatedAt"`
+	CreatedAt   time.Time          `bson:"createdAt"`
 }
 
 func (f *evaluationModel) asEvaluation() *flaggio.Evaluation {
 	return &flaggio.Evaluation{
 		ID:          f.ID.Hex(),
-		UpdatedAt:   f.UpdatedAt,
+		CreatedAt:   f.CreatedAt,
 		FlagID:      f.FlagID.Hex(),
 		FlagKey:     f.FlagKey,
 		FlagVersion: f.FlagVersion,

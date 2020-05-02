@@ -30,9 +30,9 @@ func (r *EvaluationRepository) FindAllByUserID(ctx context.Context, userID strin
 	return r.store.FindAllByUserID(ctx, userID, search, offset, limit)
 }
 
-// FindByReqHashAndFlagID returns a previous flag evaluation for a given request hash and flag key.
+// FindByReqHashAndFlagKey returns a previous flag evaluation for a given request hash and flag key.
 func (r *EvaluationRepository) FindByReqHashAndFlagKey(ctx context.Context, reqHash, flagKey string) (*flaggio.Evaluation, error) {
-	span, ctx := opentracing.StartSpanFromContext(ctx, "RedisEvaluationRepository.FindByReqHashAndFlagID")
+	span, ctx := opentracing.StartSpanFromContext(ctx, "RedisEvaluationRepository.FindByReqHashAndFlagKey")
 	defer span.Finish()
 
 	cacheKey := flaggio.EvalCacheKey(reqHash, flagKey)
@@ -72,7 +72,7 @@ func (r *EvaluationRepository) FindByReqHashAndFlagKey(ctx context.Context, reqH
 
 // FindAllByReqHash returns all previous flag evaluations for a given request hash.
 func (r *EvaluationRepository) FindAllByReqHash(ctx context.Context, reqHash string) (flaggio.EvaluationList, error) {
-	span, ctx := opentracing.StartSpanFromContext(ctx, "RedisEvaluationRepository.FindByUserIDAndFlagID")
+	span, ctx := opentracing.StartSpanFromContext(ctx, "RedisEvaluationRepository.FindAllByReqHash")
 	defer span.Finish()
 
 	cacheKey := flaggio.EvalCacheKey(reqHash)
@@ -170,7 +170,7 @@ func (r *EvaluationRepository) DeleteAllByUserID(ctx context.Context, userID str
 	}
 
 	// invalidate all relevant keys
-	return r.invalidateRelevantCacheKeys(ctx, userID)
+	return r.invalidateRelevantCacheKeys(ctx)
 }
 
 // DeleteByID deletes an evaluation by its ID.
@@ -184,10 +184,10 @@ func (r *EvaluationRepository) DeleteByID(ctx context.Context, id string) error 
 	}
 
 	// invalidate all relevant keys
-	return r.invalidateRelevantCacheKeys(ctx, id)
+	return r.invalidateRelevantCacheKeys(ctx)
 }
 
-func (r *EvaluationRepository) invalidateRelevantCacheKeys(ctx context.Context, userID string) error {
+func (r *EvaluationRepository) invalidateRelevantCacheKeys(ctx context.Context) error {
 	redisCtx := r.redis.WithContext(ctx)
 
 	// invalidate all relevant keys
@@ -195,12 +195,6 @@ func (r *EvaluationRepository) invalidateRelevantCacheKeys(ctx context.Context, 
 	if err != nil {
 		return err
 	}
-	keysToInvalidate = append(
-		[]string{
-			flaggio.EvalCacheKey("*"),
-		},
-		keysToInvalidate...,
-	)
 
 	return redisCtx.Del(keysToInvalidate...).Err()
 }

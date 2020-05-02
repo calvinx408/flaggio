@@ -62,6 +62,21 @@ func (mr *MockEvaluationMockRecorder) DeleteByID(arg0, arg1 interface{}) *gomock
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteByID", reflect.TypeOf((*MockEvaluation)(nil).DeleteByID), arg0, arg1)
 }
 
+// FindAllByReqHash mocks base method
+func (m *MockEvaluation) FindAllByReqHash(arg0 context.Context, arg1 string) (flaggio.EvaluationList, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FindAllByReqHash", arg0, arg1)
+	ret0, _ := ret[0].(flaggio.EvaluationList)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FindAllByReqHash indicates an expected call of FindAllByReqHash
+func (mr *MockEvaluationMockRecorder) FindAllByReqHash(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindAllByReqHash", reflect.TypeOf((*MockEvaluation)(nil).FindAllByReqHash), arg0, arg1)
+}
+
 // FindAllByUserID mocks base method
 func (m *MockEvaluation) FindAllByUserID(arg0 context.Context, arg1 string, arg2 *string, arg3, arg4 *int64) (*flaggio.EvaluationResults, error) {
 	m.ctrl.T.Helper()
@@ -77,31 +92,45 @@ func (mr *MockEvaluationMockRecorder) FindAllByUserID(arg0, arg1, arg2, arg3, ar
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindAllByUserID", reflect.TypeOf((*MockEvaluation)(nil).FindAllByUserID), arg0, arg1, arg2, arg3, arg4)
 }
 
-// FindByUserIDAndFlagID mocks base method
-func (m *MockEvaluation) FindByUserIDAndFlagID(arg0 context.Context, arg1, arg2 string) (*flaggio.Evaluation, error) {
+// FindByReqHashAndFlagKey mocks base method
+func (m *MockEvaluation) FindByReqHashAndFlagKey(arg0 context.Context, arg1, arg2 string) (*flaggio.Evaluation, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "FindByUserIDAndFlagID", arg0, arg1, arg2)
+	ret := m.ctrl.Call(m, "FindByReqHashAndFlagKey", arg0, arg1, arg2)
 	ret0, _ := ret[0].(*flaggio.Evaluation)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// FindByUserIDAndFlagID indicates an expected call of FindByUserIDAndFlagID
-func (mr *MockEvaluationMockRecorder) FindByUserIDAndFlagID(arg0, arg1, arg2 interface{}) *gomock.Call {
+// FindByReqHashAndFlagKey indicates an expected call of FindByReqHashAndFlagKey
+func (mr *MockEvaluationMockRecorder) FindByReqHashAndFlagKey(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindByUserIDAndFlagID", reflect.TypeOf((*MockEvaluation)(nil).FindByUserIDAndFlagID), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindByReqHashAndFlagKey", reflect.TypeOf((*MockEvaluation)(nil).FindByReqHashAndFlagKey), arg0, arg1, arg2)
 }
 
-// Replace mocks base method
-func (m *MockEvaluation) Replace(arg0 context.Context, arg1 string, arg2 flaggio.EvaluationList) error {
+// ReplaceAll mocks base method
+func (m *MockEvaluation) ReplaceAll(arg0 context.Context, arg1, arg2 string, arg3 flaggio.EvaluationList) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Replace", arg0, arg1, arg2)
+	ret := m.ctrl.Call(m, "ReplaceAll", arg0, arg1, arg2, arg3)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// Replace indicates an expected call of Replace
-func (mr *MockEvaluationMockRecorder) Replace(arg0, arg1, arg2 interface{}) *gomock.Call {
+// ReplaceAll indicates an expected call of ReplaceAll
+func (mr *MockEvaluationMockRecorder) ReplaceAll(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Replace", reflect.TypeOf((*MockEvaluation)(nil).Replace), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReplaceAll", reflect.TypeOf((*MockEvaluation)(nil).ReplaceAll), arg0, arg1, arg2, arg3)
+}
+
+// ReplaceOne mocks base method
+func (m *MockEvaluation) ReplaceOne(arg0 context.Context, arg1 string, arg2 *flaggio.Evaluation) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ReplaceOne", arg0, arg1, arg2)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// ReplaceOne indicates an expected call of ReplaceOne
+func (mr *MockEvaluationMockRecorder) ReplaceOne(arg0, arg1, arg2 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReplaceOne", reflect.TypeOf((*MockEvaluation)(nil).ReplaceOne), arg0, arg1, arg2)
 }

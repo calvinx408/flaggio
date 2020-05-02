@@ -74,7 +74,7 @@ type Evaluation {
     flagKey: String!
     flagVersion: Int!
     value: Any
-    updatedAt: Time!
+    createdAt: Time!
 }
 
 enum Operation {

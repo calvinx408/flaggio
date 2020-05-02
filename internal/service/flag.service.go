@@ -17,11 +17,13 @@ func NewFlagService(
 	flagsRepo repository.Flag,
 	segmentsRepo repository.Segment,
 	evalsRepo repository.Evaluation,
+	usersRepo repository.User,
 ) Flag {
 	return &flagService{
 		flagsRepo:    flagsRepo,
 		segmentsRepo: segmentsRepo,
 		evalsRepo:    evalsRepo,
+		usersRepo:    usersRepo,
 	}
 }
 
@@ -29,6 +31,7 @@ type flagService struct {
 	flagsRepo    repository.Flag
 	segmentsRepo repository.Segment
 	evalsRepo    repository.Evaluation
+	usersRepo    repository.User
 }
 
 // Evaluate evaluates a flag by key, returning a value based on the user context
@@ -52,7 +55,7 @@ func (s *flagService) Evaluate(ctx context.Context, flagKey string, req *Evaluat
 	}
 
 	// if there are no previous evaluations, evaluate the flag
-	if eval == nil {
+	if invalidEval(hash, flg, eval) {
 		sgmts, err := segmentsAsIdentifiers(s.segmentsRepo.FindAll(ctx, nil, nil))
 		if err != nil {
 			return nil, err
@@ -78,6 +81,15 @@ func (s *flagService) Evaluate(ctx context.Context, flagKey string, req *Evaluat
 		if req.IsDebug() {
 			eval.StackTrace = res.Stack()
 		}
+
+		// create or update the user
+		if err := s.usersRepo.Replace(ctx, req.UserID, req.UserContext); err != nil {
+			return nil, err
+		}
+		// replace the evaluation for the user and flag key
+		if err := s.evalsRepo.ReplaceOne(ctx, req.UserID, eval); err != nil {
+			return nil, err
+		}
 	}
 
 	// build the response
@@ -102,7 +114,7 @@ func (s *flagService) EvaluateAll(ctx context.Context, req *EvaluationRequest) (
 	if err != nil {
 		return nil, err
 	}
-	prevEvals, err := s.evalsRepo.FindAllByReqHash(ctx, req.UserID)
+	prevEvals, err := s.evalsRepo.FindAllByReqHash(ctx, hash)
 	if err != nil {
 		return nil, err
 	}
@@ -111,7 +123,6 @@ func (s *flagService) EvaluateAll(ctx context.Context, req *EvaluationRequest) (
 	if err != nil {
 		return nil, err
 	}
-
 	// fetch segments
 	sgmts, err := segmentsAsIdentifiers(s.segmentsRepo.FindAll(ctx, nil, nil))
 	if err != nil {
@@ -124,6 +135,7 @@ func (s *flagService) EvaluateAll(ctx context.Context, req *EvaluationRequest) (
 
 	// evaluate flags
 	evalSpan, _ := opentracing.StartSpanFromContext(ctx, "flaggio.Evaluate")
+	var outdatedEvals bool
 	for idx, flg := range flgs.Flags {
 		if evltn, ok := validEvals[flg.ID]; ok {
 			evals[idx] = evltn
@@ -141,12 +153,24 @@ func (s *flagService) EvaluateAll(ctx context.Context, req *EvaluationRequest) (
 		if err != nil {
 			evltn.Error = err.Error()
 		} else {
+			outdatedEvals = true
 			evltn.Value = res.Answer
 		}
 
 		evals[idx] = evltn
 	}
 	evalSpan.Finish()
+
+	if outdatedEvals && !req.IsDebug() {
+		// create or update the user
+		if err := s.usersRepo.Replace(ctx, req.UserID, req.UserContext); err != nil {
+			return nil, err
+		}
+		// replace the evaluations for the user
+		if err := s.evalsRepo.ReplaceAll(ctx, req.UserID, hash, evals); err != nil {
+			return nil, err
+		}
+	}
 
 	// build the response
 	evalRes := &EvaluationsResponse{
@@ -171,16 +195,23 @@ func segmentsAsIdentifiers(sgmts []*flaggio.Segment, err error) ([]flaggio.Ident
 	return iders, nil
 }
 
+func invalidEval(reqHash string, flg *flaggio.Flag, eval *flaggio.Evaluation) bool {
+	// eval is invalid if no evaluation found, the evaluation was
+	// for a previous flag version or the user context changed
+	return flg == nil ||
+		eval == nil ||
+		flg.Version != eval.FlagVersion ||
+		reqHash != eval.RequestHash
+}
+
 func validFlagEvals(reqHash string, flgs []*flaggio.Flag, evals flaggio.EvaluationList) map[string]*flaggio.Evaluation {
 	validEvals := map[string]*flaggio.Evaluation{}
 	for _, eval := range evals {
 		validEvals[eval.FlagID] = eval
 	}
 	for _, flg := range flgs {
-		eval, ok := validEvals[flg.ID]
-		// eval is missing if no evaluation found, the evaluation was
-		// for a previous flag version or the user context changed
-		if !ok || flg.Version != eval.FlagVersion || reqHash != eval.RequestHash {
+		eval := validEvals[flg.ID]
+		if invalidEval(reqHash, flg, eval) {
 			delete(validEvals, flg.ID)
 		}
 	}

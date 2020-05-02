@@ -60,11 +60,11 @@ type ComplexityRoot struct {
 	}
 
 	Evaluation struct {
+		CreatedAt   func(childComplexity int) int
 		FlagID      func(childComplexity int) int
 		FlagKey     func(childComplexity int) int
 		FlagVersion func(childComplexity int) int
 		ID          func(childComplexity int) int
-		UpdatedAt   func(childComplexity int) int
 		Value       func(childComplexity int) int
 	}
 
@@ -258,6 +258,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Distribution.Variant(childComplexity), true
 
+	case "Evaluation.createdAt":
+		if e.complexity.Evaluation.CreatedAt == nil {
+			break
+		}
+
+		return e.complexity.Evaluation.CreatedAt(childComplexity), true
+
 	case "Evaluation.flagId":
 		if e.complexity.Evaluation.FlagID == nil {
 			break
@@ -285,13 +292,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Evaluation.ID(childComplexity), true
-
-	case "Evaluation.updatedAt":
-		if e.complexity.Evaluation.UpdatedAt == nil {
-			break
-		}
-
-		return e.complexity.Evaluation.UpdatedAt(childComplexity), true
 
 	case "Evaluation.value":
 		if e.complexity.Evaluation.Value == nil {
@@ -973,7 +973,7 @@ type Evaluation {
     flagKey: String!
     flagVersion: Int!
     value: Any
-    updatedAt: Time!
+    createdAt: Time!
 }
 
 enum Operation {
@@ -2083,7 +2083,7 @@ func (ec *executionContext) _Evaluation_value(ctx context.Context, field graphql
 	return ec.marshalOAny2interface(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Evaluation_updatedAt(ctx context.Context, field graphql.CollectedField, obj *flaggio.Evaluation) (ret graphql.Marshaler) {
+func (ec *executionContext) _Evaluation_createdAt(ctx context.Context, field graphql.CollectedField, obj *flaggio.Evaluation) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -2100,7 +2100,7 @@ func (ec *executionContext) _Evaluation_updatedAt(ctx context.Context, field gra
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.UpdatedAt, nil
+		return obj.CreatedAt, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -5831,8 +5831,8 @@ func (ec *executionContext) _Evaluation(ctx context.Context, sel ast.SelectionSe
 			}
 		case "value":
 			out.Values[i] = ec._Evaluation_value(ctx, field, obj)
-		case "updatedAt":
-			out.Values[i] = ec._Evaluation_updatedAt(ctx, field, obj)
+		case "createdAt":
+			out.Values[i] = ec._Evaluation_createdAt(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
