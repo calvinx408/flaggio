@@ -48,7 +48,7 @@ func TestEvaluationRepository(t *testing.T) {
 		{
 			name: "create evaluations for user",
 			run: func(t *testing.T) {
-				err := repo.Replace(ctx, "TEST1", evaluations)
+				err := repo.ReplaceAll(ctx, "TEST1", "123456789", evaluations)
 				assert.NoError(t, err, "failed to create first evaluations")
 			},
 		},
@@ -89,10 +89,10 @@ func TestEvaluationRepository(t *testing.T) {
 			},
 		},
 		{
-			name: "find all by user and flag id",
+			name: "find all by user and flag key",
 			run: func(t *testing.T) {
-				eval, err := repo.FindByUserIDAndFlagID(ctx, "TEST1", flg1.ID)
-				assert.NoError(t, err, "failed to find all by user and flag id")
+				eval, err := repo.FindByReqHashAndFlagKey(ctx, "123456789", flg1.Key)
+				assert.NoError(t, err, "failed to find all by hash and flag id")
 				assert.Equal(t, evaluations[1], eval)
 			},
 		},
@@ -101,7 +101,7 @@ func TestEvaluationRepository(t *testing.T) {
 			run: func(t *testing.T) {
 				evaluations[0].RequestHash = "aaaaaabbbbbb"
 				evaluations[0].Value = false
-				err = repo.Replace(ctx, "TEST1", evaluations)
+				err = repo.ReplaceAll(ctx, "TEST1", "123456789", evaluations)
 				assert.NoError(t, err, "failed to update evaluations for user")
 			},
 		},
@@ -127,7 +127,7 @@ func TestEvaluationRepository(t *testing.T) {
 		{
 			name: "check evaluation was deleted",
 			run: func(t *testing.T) {
-				eval, err := repo.FindByUserIDAndFlagID(ctx, "TEST1", flg1.ID)
+				eval, err := repo.FindByReqHashAndFlagKey(ctx, "123456789", flg1.Key)
 				assert.EqualError(t, err, "evaluation: not found")
 				assert.Nil(t, eval)
 			},

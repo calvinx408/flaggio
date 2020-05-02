@@ -80,15 +80,15 @@ func (s *flagService) Evaluate(ctx context.Context, flagKey string, req *Evaluat
 		}
 		if req.IsDebug() {
 			eval.StackTrace = res.Stack()
-		}
-
-		// create or update the user
-		if err := s.usersRepo.Replace(ctx, req.UserID, req.UserContext); err != nil {
-			return nil, err
-		}
-		// replace the evaluation for the user and flag key
-		if err := s.evalsRepo.ReplaceOne(ctx, req.UserID, eval); err != nil {
-			return nil, err
+		} else {
+			// create or update the user
+			if err := s.usersRepo.Replace(ctx, req.UserID, req.UserContext); err != nil {
+				return nil, err
+			}
+			// replace the evaluation for the user and flag key
+			if err := s.evalsRepo.ReplaceOne(ctx, req.UserID, eval); err != nil {
+				return nil, err
+			}
 		}
 	}
 
