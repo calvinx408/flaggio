@@ -2,6 +2,7 @@ package mongodb
 
 import (
 	"context"
+	"regexp"
 	"strings"
 	"time"
 
@@ -10,6 +11,7 @@ import (
 	"github.com/victorkt/flaggio/internal/flaggio"
 	"github.com/victorkt/flaggio/internal/repository"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -29,7 +31,7 @@ func (r *UserRepository) FindAll(ctx context.Context, search *string, offset, li
 
 	filter := bson.M{}
 	if search != nil {
-		filter["_id"] = *search
+		filter["_id"] = primitive.Regex{Pattern: regexp.QuoteMeta(*search), Options: "i"}
 	}
 	cursor, err := r.col.Find(ctx, filter, &options.FindOptions{
 		Skip:  offset,
