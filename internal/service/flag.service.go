@@ -70,7 +70,6 @@ func (s *flagService) Evaluate(ctx context.Context, flagKey string, req *Evaluat
 			return nil, err
 		}
 
-		hash, _ := req.Hash()
 		eval = &flaggio.Evaluation{
 			FlagID:      flg.ID,
 			FlagVersion: flg.Version,
