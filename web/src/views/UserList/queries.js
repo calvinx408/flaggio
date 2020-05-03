@@ -12,12 +12,3 @@ export const USERS_QUERY = gql`
     }
   }
 `;
-
-// export const TOGGLE_FLAG_QUERY = gql`
-//   mutation toggleUser($id: ID!, $input: UpdateUser!) {
-//     updateUser(id: $id, input: $input) {
-//       id
-//       enabled
-//     }
-//   }
-// `;
