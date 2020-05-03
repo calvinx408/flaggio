@@ -35,16 +35,16 @@ func (r *EvaluationRepository) FindByReqHashAndFlagKey(ctx context.Context, reqH
 	span, ctx := opentracing.StartSpanFromContext(ctx, "RedisEvaluationRepository.FindByReqHashAndFlagKey")
 	defer span.Finish()
 
-	cacheKey := flaggio.EvalCacheKey(reqHash, flagKey)
+	cacheKey := flaggio.EvalCacheKey(reqHash)
 
 	// fetch evaluation results from cache
-	cached, err := r.redis.WithContext(ctx).Get(cacheKey).Result()
+	cached, err := r.redis.WithContext(ctx).HGet(cacheKey, flagKey).Result()
 	if err != nil && !errors.Is(err, redis.Nil) {
 		// an unexpected error occurred, return it
 		return nil, err
 	}
 	if cached != "" {
-		// cache hit, unmarshall and return result
+		// cache hit, unmarshal and return result
 		var e flaggio.Evaluation
 		if err := msgpack.Unmarshal([]byte(cached), &e); err == nil {
 			// return if no errors, otherwise defer to the store
@@ -59,11 +59,7 @@ func (r *EvaluationRepository) FindByReqHashAndFlagKey(ctx context.Context, reqH
 	}
 
 	// marshal and save result
-	b, err := msgpack.Marshal(eval)
-	if err != nil {
-		return nil, err
-	}
-	if err := r.redis.Set(cacheKey, b, r.ttl).Err(); err != nil {
+	if err := r.cacheEvaluations(ctx, reqHash, eval); err != nil {
 		return nil, err
 	}
 
@@ -78,15 +74,21 @@ func (r *EvaluationRepository) FindAllByReqHash(ctx context.Context, reqHash str
 	cacheKey := flaggio.EvalCacheKey(reqHash)
 
 	// fetch evaluation results from cache
-	cached, err := r.redis.WithContext(ctx).Get(cacheKey).Result()
+	cached, err := r.redis.WithContext(ctx).HGetAll(cacheKey).Result()
 	if err != nil && !errors.Is(err, redis.Nil) {
 		// an unexpected error occurred, return it
 		return nil, err
 	}
-	if cached != "" {
-		// cache hit, unmarshall and return result
+	if len(cached) > 0 {
+		// cache hit, unmarshal and return result
 		var el flaggio.EvaluationList
-		if err := msgpack.Unmarshal([]byte(cached), &el); err == nil {
+		for _, val := range cached {
+			var e flaggio.Evaluation
+			if err := msgpack.Unmarshal([]byte(val), &e); err == nil {
+				el = append(el, &e)
+			}
+		}
+		if len(el) == len(cached) {
 			// return if no errors, otherwise defer to the store
 			return el, nil
 		}
@@ -99,18 +101,20 @@ func (r *EvaluationRepository) FindAllByReqHash(ctx context.Context, reqHash str
 	}
 
 	// marshal and save result
-	b, err := msgpack.Marshal(evals)
-	if err != nil {
-		return nil, err
-	}
-	if err := r.redis.Set(cacheKey, b, r.ttl).Err(); err != nil {
+	if err := r.cacheEvaluations(ctx, reqHash, evals...); err != nil {
 		return nil, err
 	}
 
 	return evals, nil
 }
 
-// ReplaceOne creates or replaces one evaluation for a combination of user ID, request hash and flag key.
+// FindByID returns a previous flag evaluation by its ID.
+func (r *EvaluationRepository) FindByID(ctx context.Context, id string) (*flaggio.Evaluation, error) {
+	// not implemented on cache level
+	return r.store.FindByID(ctx, id)
+}
+
+// ReplaceOne creates or replaces one evaluation for a user ID.
 func (r *EvaluationRepository) ReplaceOne(ctx context.Context, userID string, eval *flaggio.Evaluation) error {
 	span, ctx := opentracing.StartSpanFromContext(ctx, "RedisEvaluationRepository.ReplaceOne")
 	defer span.Finish()
@@ -121,18 +125,8 @@ func (r *EvaluationRepository) ReplaceOne(ctx context.Context, userID string, ev
 		return err
 	}
 
-	// marshall and save result
-	b, err := msgpack.Marshal(eval)
-	if err != nil {
-		return err
-	}
-	cacheKey := flaggio.EvalCacheKey(eval.RequestHash, eval.FlagKey)
-	if err := r.redis.Set(cacheKey, b, r.ttl).Err(); err != nil {
-		return err
-	}
-
-	// invalidate all relevant keys
-	return nil
+	// marshal and save result
+	return r.cacheEvaluations(ctx, eval.RequestHash, eval)
 }
 
 // ReplaceAll creates or replaces evaluations for a combination of user and request hash.
@@ -146,18 +140,8 @@ func (r *EvaluationRepository) ReplaceAll(ctx context.Context, userID, reqHash s
 		return err
 	}
 
-	// marshall and save result
-	b, err := msgpack.Marshal(evals)
-	if err != nil {
-		return err
-	}
-	cacheKey := flaggio.EvalCacheKey(reqHash)
-	if err := r.redis.Set(cacheKey, b, r.ttl).Err(); err != nil {
-		return err
-	}
-
-	// invalidate all relevant keys
-	return nil
+	// marshal and save result
+	return r.cacheEvaluations(ctx, reqHash, evals...)
 }
 
 // DeleteAllByUserID deletes evaluations for a user.
@@ -165,12 +149,18 @@ func (r *EvaluationRepository) DeleteAllByUserID(ctx context.Context, userID str
 	span, ctx := opentracing.StartSpanFromContext(ctx, "RedisEvaluationRepository.DeleteAllByUserID")
 	defer span.Finish()
 
+	limit := int64(1)
+	res, err := r.store.FindAllByUserID(ctx, userID, nil, nil, &limit)
+	if err != nil {
+		return err
+	}
+
 	if err := r.store.DeleteAllByUserID(ctx, userID); err != nil {
 		return err
 	}
 
 	// invalidate all relevant keys
-	return r.invalidateRelevantCacheKeys(ctx)
+	return r.invalidateRelevantCacheKeys(ctx, res.Evaluations[0].RequestHash)
 }
 
 // DeleteByID deletes an evaluation by its ID.
@@ -178,25 +168,53 @@ func (r *EvaluationRepository) DeleteByID(ctx context.Context, id string) error 
 	span, ctx := opentracing.StartSpanFromContext(ctx, "RedisEvaluationRepository.DeleteByID")
 	defer span.Finish()
 
-	// delete the flag
+	// find the evaluation
+	eval, err := r.store.FindByID(ctx, id)
+	if err != nil {
+		return err
+	}
+
+	// delete the evaluation
 	if err := r.store.DeleteByID(ctx, id); err != nil {
 		return err
 	}
 
 	// invalidate all relevant keys
-	return r.invalidateRelevantCacheKeys(ctx)
+	return r.invalidateRelevantCacheKeys(ctx, eval.RequestHash, eval.FlagKey)
 }
 
-func (r *EvaluationRepository) invalidateRelevantCacheKeys(ctx context.Context) error {
-	redisCtx := r.redis.WithContext(ctx)
-
-	// invalidate all relevant keys
-	keysToInvalidate, err := redisCtx.Keys(flaggio.EvalCacheKey("*")).Result()
-	if err != nil {
-		return err
+func (r *EvaluationRepository) cacheEvaluations(ctx context.Context, reqHash string, evals ...*flaggio.Evaluation) error {
+	if len(evals) == 0 {
+		return nil
 	}
 
-	return redisCtx.Del(keysToInvalidate...).Err()
+	redisCtx := r.redis.WithContext(ctx)
+	cacheKey := flaggio.EvalCacheKey(reqHash)
+	evalsMap := make(map[string]interface{}, len(evals))
+
+	for _, eval := range evals {
+		b, err := msgpack.Marshal(eval)
+		if err != nil {
+			return err
+		}
+		evalsMap[eval.FlagKey] = b
+	}
+	if err := redisCtx.HSet(cacheKey, evalsMap).Err(); err != nil {
+		return err
+	}
+	return redisCtx.Expire(cacheKey, r.ttl).Err()
+}
+
+func (r *EvaluationRepository) invalidateRelevantCacheKeys(ctx context.Context, reqHash string, flagKeys ...string) error {
+	redisCtx := r.redis.WithContext(ctx)
+	cacheKey := flaggio.EvalCacheKey(reqHash)
+
+	if len(flagKeys) > 0 {
+		// delete all evaluations inside a redis hash
+		return redisCtx.HDel(cacheKey, flagKeys...).Err()
+	}
+	// delete all evaluations by its key
+	return redisCtx.Del(cacheKey).Err()
 }
 
 // NewEvaluationRepository returns a new evaluation repository that uses redis

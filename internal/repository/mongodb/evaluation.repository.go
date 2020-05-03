@@ -119,7 +119,27 @@ func (r *EvaluationRepository) FindByReqHashAndFlagKey(ctx context.Context, reqH
 	return e.asEvaluation(), nil
 }
 
-// ReplaceOne creates or replaces one evaluation for a combination of user ID, request hash and flag key.
+// FindByID returns a previous flag evaluation by its ID.
+func (r *EvaluationRepository) FindByID(ctx context.Context, idHex string) (*flaggio.Evaluation, error) {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "MongoEvaluationRepository.FindByID")
+	defer span.Finish()
+
+	id, err := primitive.ObjectIDFromHex(idHex)
+	if err != nil {
+		return nil, err
+	}
+
+	var e evaluationModel
+	if err := r.col.FindOne(ctx, bson.M{"_id": id}).Decode(&e); err != nil {
+		if err == mongo.ErrNoDocuments {
+			return nil, errors.NotFound("evaluation")
+		}
+		return nil, err
+	}
+	return e.asEvaluation(), nil
+}
+
+// ReplaceOne creates or replaces one evaluation for a user ID.
 func (r *EvaluationRepository) ReplaceOne(ctx context.Context, userID string, eval *flaggio.Evaluation) error {
 	span, ctx := opentracing.StartSpanFromContext(ctx, "MongoEvaluationRepository.ReplaceOne")
 	defer span.Finish()

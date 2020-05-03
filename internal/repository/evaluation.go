@@ -16,7 +16,9 @@ type Evaluation interface {
 	FindAllByReqHash(ctx context.Context, reqHash string) (flaggio.EvaluationList, error)
 	// FindByReqHashAndFlagKey returns a previous flag evaluation for a given request hash and flag key.
 	FindByReqHashAndFlagKey(ctx context.Context, reqHash, flagKey string) (*flaggio.Evaluation, error)
-	// ReplaceOne creates or replaces one evaluation for a combination of user ID, request hash and flag key.
+	// FindByID returns a previous flag evaluation by its ID.
+	FindByID(ctx context.Context, id string) (*flaggio.Evaluation, error)
+	// ReplaceOne creates or replaces one evaluation for a user ID.
 	ReplaceOne(ctx context.Context, userID string, eval *flaggio.Evaluation) error
 	// ReplaceAll creates or replaces evaluations for a combination of user and request hash.
 	ReplaceAll(ctx context.Context, userID, reqHash string, evals flaggio.EvaluationList) error

@@ -92,6 +92,21 @@ func (mr *MockEvaluationMockRecorder) FindAllByUserID(arg0, arg1, arg2, arg3, ar
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindAllByUserID", reflect.TypeOf((*MockEvaluation)(nil).FindAllByUserID), arg0, arg1, arg2, arg3, arg4)
 }
 
+// FindByID mocks base method
+func (m *MockEvaluation) FindByID(arg0 context.Context, arg1 string) (*flaggio.Evaluation, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FindByID", arg0, arg1)
+	ret0, _ := ret[0].(*flaggio.Evaluation)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FindByID indicates an expected call of FindByID
+func (mr *MockEvaluationMockRecorder) FindByID(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindByID", reflect.TypeOf((*MockEvaluation)(nil).FindByID), arg0, arg1)
+}
+
 // FindByReqHashAndFlagKey mocks base method
 func (m *MockEvaluation) FindByReqHashAndFlagKey(arg0 context.Context, arg1, arg2 string) (*flaggio.Evaluation, error) {
 	m.ctrl.T.Helper()

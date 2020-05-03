@@ -37,7 +37,7 @@ func (r *FlagRepository) FindAll(ctx context.Context, search *string, offset, li
 			return nil, err
 		}
 		if cached != "" {
-			// cache hit, unmarshall and return result
+			// cache hit, unmarshal and return result
 			var fr flaggio.FlagResults
 			if err := msgpack.Unmarshal([]byte(cached), &fr); err == nil {
 				// return if no errors, otherwise defer to the store
@@ -52,7 +52,7 @@ func (r *FlagRepository) FindAll(ctx context.Context, search *string, offset, li
 		return nil, err
 	}
 
-	// marshall and save result
+	// marshal and save result
 	if shouldCache {
 		b, err := msgpack.Marshal(res)
 		if err != nil {
@@ -80,7 +80,7 @@ func (r *FlagRepository) FindByID(ctx context.Context, id string) (*flaggio.Flag
 		return nil, err
 	}
 	if cached != "" {
-		// cache hit, unmarshall and return result
+		// cache hit, unmarshal and return result
 		var f flaggio.Flag
 		if err := msgpack.Unmarshal([]byte(cached), &f); err == nil {
 			// return if no errors, otherwise defer to the store
@@ -94,7 +94,7 @@ func (r *FlagRepository) FindByID(ctx context.Context, id string) (*flaggio.Flag
 		return nil, err
 	}
 
-	// marshall and save result
+	// marshal and save result
 	b, err := msgpack.Marshal(res)
 	if err != nil {
 		return nil, err
@@ -120,7 +120,7 @@ func (r *FlagRepository) FindByKey(ctx context.Context, key string) (*flaggio.Fl
 		return nil, err
 	}
 	if cached != "" {
-		// cache hit, unmarshall and return result
+		// cache hit, unmarshal and return result
 		var f flaggio.Flag
 		if err := msgpack.Unmarshal([]byte(cached), &f); err == nil {
 			// return if no errors, otherwise defer to the store
@@ -134,7 +134,7 @@ func (r *FlagRepository) FindByKey(ctx context.Context, key string) (*flaggio.Fl
 		return nil, err
 	}
 
-	// marshall and save result
+	// marshal and save result
 	b, err := msgpack.Marshal(res)
 	if err != nil {
 		return nil, err

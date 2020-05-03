@@ -143,6 +143,7 @@ func TestFlagService_EvaluateAll(t *testing.T) {
 		evaluationRequest  *service.EvaluationRequest
 		evaluationResults  *flaggio.EvaluationResults
 		expectedEvaluation *service.EvaluationsResponse
+		outdatedEvals      flaggio.EvaluationList
 		shouldReplaceEval  bool
 	}{
 		{
@@ -157,6 +158,10 @@ func TestFlagService_EvaluateAll(t *testing.T) {
 					{FlagID: "1", FlagKey: "a", Value: 20, RequestHash: "5e83501f42ab66e04cd03a53d55399ffa7387a55"},
 					{FlagID: "2", FlagKey: "b", Value: 10, RequestHash: "5e83501f42ab66e04cd03a53d55399ffa7387a55"},
 				},
+			},
+			outdatedEvals: flaggio.EvaluationList{
+				{FlagID: "1", FlagKey: "a", Value: 20, RequestHash: "5e83501f42ab66e04cd03a53d55399ffa7387a55"},
+				{FlagID: "2", FlagKey: "b", Value: 10, RequestHash: "5e83501f42ab66e04cd03a53d55399ffa7387a55"},
 			},
 			shouldReplaceEval: true,
 		},
@@ -191,6 +196,9 @@ func TestFlagService_EvaluateAll(t *testing.T) {
 					{FlagID: "1", FlagKey: "a", Value: 10, RequestHash: "5e83501f42ab66e04cd03a53d55399ffa7387a55"},
 					{FlagID: "2", FlagKey: "b", Value: 10, RequestHash: "5e83501f42ab66e04cd03a53d55399ffa7387a55"},
 				},
+			},
+			outdatedEvals: flaggio.EvaluationList{
+				{FlagID: "2", FlagKey: "b", Value: 10, RequestHash: "5e83501f42ab66e04cd03a53d55399ffa7387a55"},
 			},
 			shouldReplaceEval: true,
 		},
@@ -227,7 +235,7 @@ func TestFlagService_EvaluateAll(t *testing.T) {
 					Replace(gomock.AssignableToTypeOf(ctxInterface), tt.evaluationRequest.UserID, tt.evaluationRequest.UserContext).
 					Times(1).Return(nil)
 				evalRepo.EXPECT().
-					ReplaceAll(gomock.AssignableToTypeOf(ctxInterface), tt.evaluationRequest.UserID, hash, tt.expectedEvaluation.Evaluations).
+					ReplaceAll(gomock.AssignableToTypeOf(ctxInterface), tt.evaluationRequest.UserID, hash, tt.outdatedEvals).
 					Times(1).Return(nil)
 			}
 

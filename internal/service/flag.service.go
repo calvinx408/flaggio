@@ -131,11 +131,11 @@ func (s *flagService) EvaluateAll(ctx context.Context, req *EvaluationRequest) (
 
 	// check for missing flag evaluations
 	validEvals := validFlagEvals(hash, flgs.Flags, prevEvals)
-	evals := make([]*flaggio.Evaluation, len(flgs.Flags))
+	evals := make(flaggio.EvaluationList, len(flgs.Flags))
 
 	// evaluate flags
 	evalSpan, _ := opentracing.StartSpanFromContext(ctx, "flaggio.Evaluate")
-	var outdatedEvals bool
+	var outdatedEvals flaggio.EvaluationList
 	for idx, flg := range flgs.Flags {
 		if evltn, ok := validEvals[flg.ID]; ok {
 			evals[idx] = evltn
@@ -153,21 +153,21 @@ func (s *flagService) EvaluateAll(ctx context.Context, req *EvaluationRequest) (
 		if err != nil {
 			evltn.Error = err.Error()
 		} else {
-			outdatedEvals = true
 			evltn.Value = res.Answer
+			outdatedEvals = append(outdatedEvals, evltn)
 		}
 
 		evals[idx] = evltn
 	}
 	evalSpan.Finish()
 
-	if outdatedEvals && !req.IsDebug() {
+	if len(outdatedEvals) > 0 && !req.IsDebug() {
 		// create or update the user
 		if err := s.usersRepo.Replace(ctx, req.UserID, req.UserContext); err != nil {
 			return nil, err
 		}
 		// replace the evaluations for the user
-		if err := s.evalsRepo.ReplaceAll(ctx, req.UserID, hash, evals); err != nil {
+		if err := s.evalsRepo.ReplaceAll(ctx, req.UserID, hash, outdatedEvals); err != nil {
 			return nil, err
 		}
 	}
