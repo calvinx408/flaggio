@@ -8,6 +8,7 @@ import {
   NotFound as NotFoundView,
   SegmentList as SegmentListView,
   SegmentForm as SegmentFormView,
+  UserList as UserListView,
 } from './views';
 
 const Routes = () => {
@@ -54,6 +55,18 @@ const Routes = () => {
         layout={MainLayout}
         path="/segments/:id"
       />
+      <RouteWithLayout
+        component={UserListView}
+        exact
+        layout={MainLayout}
+        path="/users"
+      />
+      {/*<RouteWithLayout*/}
+      {/*  component={UserFormView}*/}
+      {/*  exact*/}
+      {/*  layout={MainLayout}*/}
+      {/*  path="/users/:id"*/}
+      {/*/>*/}
       <RouteWithLayout
         component={NotFoundView}
         exact
