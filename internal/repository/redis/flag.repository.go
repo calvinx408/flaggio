@@ -205,23 +205,12 @@ func (r *FlagRepository) Delete(ctx context.Context, id string) error {
 }
 
 func (r *FlagRepository) invalidateRelevantCacheKeys(ctx context.Context, flagID, flagKey string) error {
-	redisCtx := r.redis.WithContext(ctx)
-
 	// invalidate all relevant keys
-	keysToInvalidate, err := redisCtx.Keys(flaggio.EvalCacheKey("*")).Result()
-	if err != nil {
-		return err
-	}
-	keysToInvalidate = append(
-		[]string{
-			flaggio.FlagCacheKey("*"),
-			flaggio.FlagCacheKey(flagID),
-			flaggio.FlagCacheKey("key", flagKey),
-		},
-		keysToInvalidate...,
-	)
-
-	return redisCtx.Del(keysToInvalidate...).Err()
+	return r.redis.WithContext(ctx).Del(
+		flaggio.FlagCacheKey("*"),
+		flaggio.FlagCacheKey(flagID),
+		flaggio.FlagCacheKey("key", flagKey),
+	).Err()
 }
 
 // NewFlagRepository returns a new flag repository that uses redis
