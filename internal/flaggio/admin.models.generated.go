@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"strconv"
+	"time"
 )
 
 type Ruler interface {
@@ -89,6 +90,7 @@ type UpdateVariant struct {
 type User struct {
 	ID          string                 `json:"id"`
 	Context     map[string]interface{} `json:"context"`
+	UpdatedAt   time.Time              `json:"updatedAt"`
 	Evaluations *EvaluationResults     `json:"evaluations"`
 }
 

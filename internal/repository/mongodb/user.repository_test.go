@@ -35,7 +35,6 @@ func TestUserRepository(t *testing.T) {
 			run: func(t *testing.T) {
 				err = repo.Replace(ctx, user1.ID, user1.Context)
 				assert.NoError(t, err, "failed to create first user")
-
 			},
 		},
 		{
@@ -43,6 +42,7 @@ func TestUserRepository(t *testing.T) {
 			run: func(t *testing.T) {
 				usr, err := repo.FindByID(ctx, user1.ID)
 				assert.NoError(t, err, "failed to find first user")
+				user1.UpdatedAt = usr.UpdatedAt
 				assert.Equal(t, user1, usr)
 			},
 		},
@@ -59,6 +59,7 @@ func TestUserRepository(t *testing.T) {
 			run: func(t *testing.T) {
 				usr, err := repo.FindByID(ctx, user2.ID)
 				assert.NoError(t, err, "failed to find second user")
+				user2.UpdatedAt = usr.UpdatedAt
 				assert.Equal(t, user2, usr)
 			},
 		},
@@ -107,6 +108,7 @@ func TestUserRepository(t *testing.T) {
 			run: func(t *testing.T) {
 				usr, err := repo.FindByID(ctx, user2.ID)
 				assert.NoError(t, err, "failed to find second user again")
+				user2.UpdatedAt = usr.UpdatedAt
 				assert.Equal(t, user2, usr)
 			},
 		},

@@ -65,6 +65,7 @@ type Segment {
 type User {
     id: ID!
     context: Map!
+    updatedAt: Time!
     evaluations(search: String, offset: Int, limit: Int): EvaluationResults! @goField(forceResolver: true)
 }
 

@@ -191,7 +191,8 @@ type userModel struct {
 
 func (f *userModel) asUser() *flaggio.User {
 	return &flaggio.User{
-		ID:      f.ID,
-		Context: f.Context,
+		ID:        f.ID,
+		Context:   f.Context,
+		UpdatedAt: f.UpdatedAt,
 	}
 }

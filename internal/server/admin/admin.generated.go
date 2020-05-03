@@ -147,6 +147,7 @@ type ComplexityRoot struct {
 		Context     func(childComplexity int) int
 		Evaluations func(childComplexity int, search *string, offset *int, limit *int) int
 		ID          func(childComplexity int) int
+		UpdatedAt   func(childComplexity int) int
 	}
 
 	UserResults struct {
@@ -798,6 +799,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.User.ID(childComplexity), true
 
+	case "User.updatedAt":
+		if e.complexity.User.UpdatedAt == nil {
+			break
+		}
+
+		return e.complexity.User.UpdatedAt(childComplexity), true
+
 	case "UserResults.total":
 		if e.complexity.UserResults.Total == nil {
 			break
@@ -964,6 +972,7 @@ type Segment {
 type User {
     id: ID!
     context: Map!
+    updatedAt: Time!
     evaluations(search: String, offset: Int, limit: Int): EvaluationResults! @goField(forceResolver: true)
 }
 
@@ -4113,6 +4122,40 @@ func (ec *executionContext) _User_context(ctx context.Context, field graphql.Col
 	return ec.marshalNMap2map(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _User_updatedAt(ctx context.Context, field graphql.CollectedField, obj *flaggio.User) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "User",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.UpdatedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(time.Time)
+	fc.Result = res
+	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _User_evaluations(ctx context.Context, field graphql.CollectedField, obj *flaggio.User) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -6335,6 +6378,11 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 			}
 		case "context":
 			out.Values[i] = ec._User_context(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		case "updatedAt":
+			out.Values[i] = ec._User_updatedAt(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&invalids, 1)
 			}
